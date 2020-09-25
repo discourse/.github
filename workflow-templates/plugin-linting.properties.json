@@ -1,5 +1,12 @@
 {
-    "name": "Discourse Plugin Test Workflow",
-    "description": "Runs front-end and back-end plugin tests standalone and against core Discourse",
-    "iconName": "discourse"
+    "name": "Discourse Plugin Linting Workflow",
+    "description": "Runs rubocop, prettier, and eslint on plugin repos",
+    "iconName": "discourse",
+    "filePatterns": [
+        ".eslintrc",
+        ".rubocop.yml",
+        "package.json",
+        ".template-lintrc.js",
+        "Gemfile"
+    ]
 }
