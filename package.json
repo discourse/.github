@@ -1,0 +1,11 @@
+{
+  "name": "discourse-github-actions-workflows",
+  "version": "1.0.0",
+  "main": "",
+  "repository": "git@github.com:discourse/.github.git",
+  "author": "Discourse",
+  "license": "GPL-2.0-only",
+  "devDependencies": {
+    "eslint-config-discourse": "^1.1.5"
+  }
+}
