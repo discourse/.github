@@ -95,5 +95,5 @@ jobs:
           git config user.email "ci@discourse"
           git config user.name "Discourse CI"
           git add -A
-          git commit -m "DEV: Updates to CI workflows"
+          git commit -m "DEV: Update CI workflows"
           git push
