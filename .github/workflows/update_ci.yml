@@ -72,7 +72,7 @@ jobs:
           - "discourse-voting"
           - "discourse-yearly-review"
           - "discourse-zendesk-plugin"
-    runs-on: [ubuntu-latest]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: checkout workflows
