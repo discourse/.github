@@ -47,7 +47,7 @@ jobs:
           - "discourse-oauth2-basic"
           - "discourse-openid-connect"
           - "discourse-patreon"
-          - "discourse-perspective"
+          - "discourse-perspective-api"
           - "discourse-plugin-discord-auth"
           - "discourse-plugin-linkedin-auth"
           - "discourse-plugin-office365-auth"
