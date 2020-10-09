@@ -1,0 +1,99 @@
+name: Update CI
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'workflow-templates/*.yml'
+
+jobs:
+  update-ci:
+    strategy:
+      matrix:
+        repositories:
+          - "discourse-adplugin"
+          - "discourse-affiliate"
+          - "discourse-akismet"
+          - "discourse-algolia"
+          - "discourse-assign"
+          - "discourse-auto-deactivate"
+          - "discourse-bbcode"
+          - "discourse-bbcode-color"
+          - "discourse-cakeday"
+          - "discourse-calendar"
+          - "discourse-canned-replies"
+          - "discourse-categories-suppressed"
+          - "discourse-characters-required"
+          - "discourse-chat-integration"
+          - "discourse-checklist"
+          - "discourse-code-review"
+          - "discourse-crowd"
+          - "discourse-data-explorer"
+          - "discourse-encrypt"
+          - "discourse-fontawesome-pro"
+          - "discourse-footnote"
+          - "discourse-github"
+          - "discourse-gradle-issue"
+          - "discourse-graphviz"
+          - "discourse-invite-tokens"
+          - "discourse-knowledge-explorer"
+          - "discourse-login-with-amazon"
+          - "discourse-logster-rate-limit-checker"
+          - "discourse-logster-transporter"
+          - "discourse-math"
+          - "discourse-moderator-attention"
+          - "discourse-no-bump"
+          - "discourse-oauth2-basic"
+          - "discourse-openid-connect"
+          - "discourse-patreon"
+          - "discourse-perspective"
+          - "discourse-plugin-discord-auth"
+          - "discourse-plugin-linkedin-auth"
+          - "discourse-plugin-office365-auth"
+          - "discourse-policy"
+          - "discourse-prometheus"
+          - "discourse-prometheus-alert-receiver"
+          - "discourse-push-notifications"
+          - "discourse-restricted-replies"
+          - "discourse-rss-polling"
+          - "discourse-saved-searches"
+          - "discourse-signatures"
+          - "discourse-sitemap"
+          - "discourse-solved"
+          - "discourse-spoiler-alert"
+          - "discourse-staff-alias"
+          - "discourse-steam-login"
+          - "discourse-teambuild"
+          - "discourse-tooltips"
+          - "discourse-translator"
+          - "discourse-user-card-badges"
+          - "discourse-user-notes"
+          - "discourse-voting"
+          - "discourse-yearly-review"
+          - "discourse-zendesk-plugin"
+    runs-on: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: checkout workflows
+        uses: actions/checkout@v2
+        with:
+          path: ci
+      - name: checkout plugin
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.CI_TOKEN }}
+          repository: discourse/${{ matrix.repositories }}
+          path: plugin
+      - name: copy files
+        run: |
+          [ ! -d "plugin/.github/workflows" ] && mkdir -p plugin/.github/workflows
+          cp ci/workflow-templates/*.yml plugin/.github/workflows
+      - name: commit changes
+        run: |
+          cd plugin
+          git config user.email "ci@discourse"
+          git config user.name "Discourse CI"
+          git add -A
+          git commit -m "DEV: Update CI workflows"
+          git push
