@@ -1,6 +1,6 @@
 name: Update CI
 
-on: 
+on:
   push:
     branches:
       - master
@@ -21,8 +21,8 @@ jobs:
           - "discourse-bbcode"
           - "discourse-bbcode-color"
           - "discourse-cakeday"
-          - "discourse-canned-replies"
           - "discourse-calendar"
+          - "discourse-canned-replies"
           - "discourse-categories-suppressed"
           - "discourse-characters-required"
           - "discourse-chat-integration"
@@ -31,46 +31,47 @@ jobs:
           - "discourse-crowd"
           - "discourse-data-explorer"
           - "discourse-encrypt"
+          - "discourse-fontawesome-pro"
           - "discourse-footnote"
           - "discourse-github"
           - "discourse-gradle-issue"
           - "discourse-graphviz"
           - "discourse-invite-tokens"
           - "discourse-knowledge-explorer"
+          - "discourse-login-with-amazon"
           - "discourse-logster-rate-limit-checker"
           - "discourse-logster-transporter"
           - "discourse-math"
           - "discourse-moderator-attention"
           - "discourse-no-bump"
           - "discourse-oauth2-basic"
+          - "discourse-openid-connect"
           - "discourse-patreon"
           - "discourse-perspective"
           - "discourse-plugin-discord-auth"
           - "discourse-plugin-linkedin-auth"
           - "discourse-plugin-office365-auth"
-          - "discourse-steam-login"
-          - "discourse-login-with-amazon"
           - "discourse-policy"
           - "discourse-prometheus"
           - "discourse-prometheus-alert-receiver"
           - "discourse-push-notifications"
+          - "discourse-restricted-replies"
+          - "discourse-rss-polling"
           - "discourse-saved-searches"
           - "discourse-signatures"
           - "discourse-sitemap"
           - "discourse-solved"
           - "discourse-spoiler-alert"
-          - "discourse-user-notes"
+          - "discourse-staff-alias"
+          - "discourse-steam-login"
+          - "discourse-teambuild"
           - "discourse-tooltips"
           - "discourse-translator"
           - "discourse-user-card-badges"
+          - "discourse-user-notes"
           - "discourse-voting"
           - "discourse-yearly-review"
-          - "discourse-openid-connect"
-          - "discourse-restricted-replies"
-          - "discourse-rss-polling"
           - "discourse-zendesk-plugin"
-          - "discourse-fontawesome-pro"
-          - "discourse-staff-alias"
     runs-on: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
@@ -90,10 +91,9 @@ jobs:
           cp ci/workflow-templates/*.yml plugin/.github/workflows
       - name: commit changes
         run: |
-          pwd
           cd plugin
           git config user.email "ci@discourse"
           git config user.name "Discourse CI"
           git add -A
-          git commit -m "Updates to CI workflows"
-          git push 
+          git commit -m "DEV: Updates to CI workflows"
+          git push
