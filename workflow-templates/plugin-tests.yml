@@ -25,7 +25,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        build_type: ["BACKEND", "FRONTEND"]
+        build_type: ["backend", "frontend"]
         os: [ubuntu-latest]
         ruby: ["2.6"]
         postgres: ["12"]
@@ -82,7 +82,7 @@ jobs:
           wget -qO- https://raw.githubusercontent.com/discourse/discourse_docker/master/image/base/install-pngquant | sudo sh
 
       - name: Update imagemagick
-        if: matrix.build_type == 'BACKEND'
+        if: matrix.build_type == 'backend'
         run: |
           wget https://raw.githubusercontent.com/discourse/discourse_docker/master/image/base/install-imagemagick
           chmod +x install-imagemagick
@@ -138,10 +138,10 @@ jobs:
           bin/rake db:migrate
 
       - name: Plugin RSpec
-        if: matrix.build_type == 'BACKEND' && steps.check_spec.outputs.files_exists == 'true'
+        if: matrix.build_type == 'backend' && steps.check_spec.outputs.files_exists == 'true'
         run: bin/rake plugin:spec[${{ github.event.repository.name }}]
 
       - name: Plugin QUnit
-        if: matrix.build_type == 'FRONTEND' && steps.check_qunit.outputs.files_exists == 'true'
+        if: matrix.build_type == 'frontend' && steps.check_qunit.outputs.files_exists == 'true'
         run: bundle exec rake plugin:qunit['${{ github.event.repository.name }}','1200000']
         timeout-minutes: 30
