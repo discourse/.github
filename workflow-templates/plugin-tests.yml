@@ -9,14 +9,14 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.build_types }}
+    name: ${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
 
     env:
       DISCOURSE_HOSTNAME: www.example.com
       RUBY_GLOBAL_METHOD_CACHE_SIZE: 131072
-      BUILD_TYPE: ${{ matrix.build_types }}
+      BUILD_TYPE: ${{ matrix.build_type }}
       RAILS_ENV: test
       PGHOST: localhost
       PGUSER: discourse
@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        build_types: ["BACKEND", "FRONTEND"]
+        build_type: ["BACKEND", "FRONTEND"]
         os: [ubuntu-latest]
         ruby: ["2.6"]
         postgres: ["12"]
