@@ -64,6 +64,7 @@ jobs:
           - "discourse-spoiler-alert"
           - "discourse-staff-alias"
           - "discourse-steam-login"
+          - "discourse-subscriptions"
           - "discourse-teambuild"
           - "discourse-tooltips"
           - "discourse-translator"
