@@ -95,6 +95,14 @@ jobs:
           cd plugin
           git config user.email "ci@discourse"
           git config user.name "Discourse CI"
+          git checkout -b update-ci
           git add -A
           git commit -m "DEV: Update CI workflows"
-          git push
+      - name: create pull request
+        run: |
+          curl \
+            -u discoursebot:${{ secrets.CI_TOKEN }}
+            -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/discourse/${{ matrix.repositories }}/pulls \
+            -d '{"head":"update-ci","base":"master","title":"DEV: Update CI","body":"Automatic CI update PR"}'
