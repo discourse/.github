@@ -95,9 +95,10 @@ jobs:
           cd plugin
           git config user.email "ci@discourse"
           git config user.name "Discourse CI"
-          git checkout -b update-ci
+          git checkout update-ci 2>/dev/null || git checkout -b update-ci
           git add -A
           git commit -m "DEV: Update CI workflows"
+          git push --set-upstream origin update-ci
       - name: create pull request
         run: |
           curl \
