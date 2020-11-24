@@ -96,6 +96,7 @@ jobs:
           token: ${{ secrets.CI_TOKEN }}
           path: plugin
           branch: update-ci
+          commit-message: "DEV: Update CI workflows"
           title: 'DEV: Update CI workflows'
           body: |
             Updates CI from discourse/.github
