@@ -90,26 +90,12 @@ jobs:
         run: |
           [ ! -d "plugin/.github/workflows" ] && mkdir -p plugin/.github/workflows
           cp ci/workflow-templates/*.yml plugin/.github/workflows
-      - name: commit changes
-        run: |
-          cd plugin
-          git config user.email "ci@discourse"
-          git config user.name "Discourse CI"
-          git checkout update-ci 2>/dev/null || git checkout -b update-ci
-          git add -A
-          git commit -m "DEV: Update CI workflows"
-          git push --set-upstream origin update-ci
-      - name: create pull request
-        run: |
-          main_status=$(curl -s -o /dev/null -w "%{http_code}" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/discourse/${{ matrix.repositories }}/branches/main)
-          if [[ $main_status == 200 ]]; then
-            export BRANCH="main"
-          else
-            export BRANCH="master"
-          fi
-          curl \
-            -u discoursebot:${{ secrets.CI_TOKEN }}
-            -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/discourse/${{ matrix.repositories }}/pulls \
-            -d '{"head":"update-ci","base":"'"$BRANCH"'","title":"DEV: Update CI","body":"Automatic CI update PR"}'
+      - name: create PR
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.CI_TOKEN }}
+          path: plugin
+          branch: update-ci
+          title: 'DEV: Update CI workflows'
+          body: |
+            Updates CI from discourse/.github
