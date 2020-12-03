@@ -95,11 +95,13 @@ jobs:
         run: |
           [ ! -d "plugin/.github/workflows" ] && mkdir -p plugin/.github/workflows
           cp ci/workflow-templates/*.yml plugin/.github/workflows
-      - name: commit changes
-        run: |
-          cd plugin
-          git config user.email "ci@discourse"
-          git config user.name "Discourse CI"
-          git add -A
-          git commit -m "DEV: Update CI workflows"
-          git push
+      - name: create PR
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.CI_TOKEN }}
+          path: plugin
+          branch: update-ci
+          commit-message: "DEV: Update CI workflows"
+          title: 'DEV: Update CI workflows'
+          body: |
+            Updates CI from discourse/.github
