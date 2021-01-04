@@ -10,7 +10,7 @@ on:
 jobs:
   update-ci:
     strategy:
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         repositories:
           - "discourse-adplugin"
@@ -96,6 +96,7 @@ jobs:
         run: |
           [ ! -d "plugin/.github/workflows" ] && mkdir -p plugin/.github/workflows
           cp ci/workflow-templates/*.yml plugin/.github/workflows
+          sleep 1
       - name: create PR
         uses: peter-evans/create-pull-request@v3
         with:
