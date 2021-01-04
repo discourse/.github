@@ -10,6 +10,7 @@ on:
 jobs:
   update-ci:
     strategy:
+      max-parallel: 2
       matrix:
         repositories:
           - "discourse-adplugin"
