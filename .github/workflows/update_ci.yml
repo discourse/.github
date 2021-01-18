@@ -41,7 +41,7 @@ jobs:
           - "discourse-gradle-issue"
           - "discourse-graphviz"
           - "discourse-invite-tokens"
-          - "discourse-knowledge-explorer"
+          - "discourse-docs"
           - "discourse-login-with-amazon"
           - "discourse-logster-rate-limit-checker"
           - "discourse-logster-transporter"
