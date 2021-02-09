@@ -93,27 +93,10 @@ jobs:
           redis-version: ${{ matrix.redis }}
 
       - name: Setup ruby
-        uses: actions/setup-ruby@v1
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
-
-      - name: Setup bundler
-        run: |
-          gem install bundler -v 2.1.4 --no-doc
-          bundle config deployment 'true'
-          bundle config without 'development'
-
-      - name: Bundler cache
-        uses: actions/cache@v2
-        id: bundler-cache
-        with:
-          path: vendor/bundle
-          key: ${{ runner.os }}-gem-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-gem-
-
-      - name: Setup gems
-        run: bundle install --jobs 4
+          bundler-cache: true
 
       - name: Get yarn cache directory
         id: yarn-cache-dir
