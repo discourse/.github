@@ -47,13 +47,13 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
         with:
           repository: discourse/discourse
           fetch-depth: 1
 
       - name: Install plugin
-        uses: actions/checkout@master
+        uses: actions/checkout@v2
         with:
           path: plugins/${{ github.event.repository.name }}
           fetch-depth: 1
