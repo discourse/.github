@@ -98,6 +98,10 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
 
+      - name: Lint English locale
+        if: matrix.build_type == 'backend'
+        run: bundle exec ruby script/i18n_lint.rb "plugins/${{ github.event.repository.name }}/locales/{client,server}.en.yml"
+
       - name: Get yarn cache directory
         id: yarn-cache-dir
         run: echo "::set-output name=dir::$(yarn cache dir)"
