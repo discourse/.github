@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - 'workflow-templates/*.yml'
+      - "workflow-templates/*.yml"
 
 jobs:
   update-ci:
@@ -104,6 +104,6 @@ jobs:
           path: plugin
           branch: update-ci
           commit-message: "DEV: Update CI workflows"
-          title: 'DEV: Update CI workflows'
+          title: "DEV: Update CI workflows"
           body: |
             Updates CI from discourse/.github
