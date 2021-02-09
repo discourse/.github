@@ -20,12 +20,9 @@ jobs:
           node-version: 12
 
       - name: Set up ruby
-        uses: actions/setup-ruby@v1
+        uses: ruby/setup-ruby@v1
         with:
           ruby-version: 2.7
-
-      - name: Setup bundler
-        run: gem install bundler -v 2.1.4 --no-doc
 
       - name: Setup gems
         run: bundle install --jobs 4
