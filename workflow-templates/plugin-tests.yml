@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     name: ${{ matrix.build_type }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 60
 
     env:
@@ -26,7 +26,6 @@ jobs:
 
       matrix:
         build_type: ["backend", "frontend"]
-        os: [ubuntu-latest]
         ruby: ["2.7"]
         postgres: ["12"]
         redis: ["4.x"]
