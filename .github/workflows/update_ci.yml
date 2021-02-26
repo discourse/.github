@@ -1,11 +1,7 @@
 name: Update CI
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - "workflow-templates/*.yml"
+  workflow_dispatch:
 
 jobs:
   update-ci:
