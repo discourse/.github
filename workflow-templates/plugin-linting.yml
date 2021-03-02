@@ -29,9 +29,11 @@ jobs:
         run: yarn install
 
       - name: ESLint
+        if: ${{ always() }}
         run: yarn eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,assets}/javascripts
 
       - name: Prettier
+        if: ${{ always() }}
         run: |
           yarn prettier -v
           if [ -d "assets" ]; then \
@@ -42,7 +44,9 @@ jobs:
           fi
 
       - name: Ember template lint
+        if: ${{ always() }}
         run: yarn ember-template-lint assets/javascripts
 
       - name: Rubocop
+        if: ${{ always() }}
         run: bundle exec rubocop .
