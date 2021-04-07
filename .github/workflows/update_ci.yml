@@ -53,6 +53,7 @@ jobs:
           - "discourse-plugin-discord-auth"
           - "discourse-plugin-linkedin-auth"
           - "discourse-plugin-office365-auth"
+          - "discourse-plugin-skeleton"
           - "discourse-policy"
           - "discourse-prometheus"
           - "discourse-prometheus-alert-receiver"
