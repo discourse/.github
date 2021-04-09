@@ -58,6 +58,7 @@ jobs:
           - "discourse-prometheus"
           - "discourse-prometheus-alert-receiver"
           - "discourse-push-notifications"
+          - "discourse-reactions"
           - "discourse-restricted-replies"
           - "discourse-rss-polling"
           - "discourse-saved-searches"
