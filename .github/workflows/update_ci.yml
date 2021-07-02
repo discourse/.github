@@ -20,6 +20,7 @@ jobs:
           - "discourse-bbcode"
           - "discourse-bbcode-color"
           - "discourse-bcc"
+          - "discourse-brightcove"
           - "discourse-cakeday"
           - "discourse-calendar"
           - "discourse-canned-replies"
