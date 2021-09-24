@@ -73,6 +73,7 @@ jobs:
           - "discourse-staff-alias"
           - "discourse-steam-login"
           - "discourse-subscriptions"
+          - "discourse-surveys"
           - "discourse-teambuild"
           - "discourse-theme-creator"
           - "discourse-tooltips"
