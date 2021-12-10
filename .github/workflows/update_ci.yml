@@ -37,6 +37,7 @@ jobs:
           - "discourse-docs"
           - "discourse-encrypt"
           - "discourse-fingerprint"
+          - "discourse-follow"
           - "discourse-fontawesome-pro"
           - "discourse-footnote"
           - "discourse-github"
