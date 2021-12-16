@@ -7,7 +7,7 @@ jobs:
   update-ci:
     strategy:
       max-parallel: 1
-      fast-fail: false
+      fail-fast: false
       matrix:
         repositories:
           - "discourse-adplugin"
