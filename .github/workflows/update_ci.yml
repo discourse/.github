@@ -7,6 +7,7 @@ jobs:
   update-ci:
     strategy:
       max-parallel: 1
+      fast_fail: false
       matrix:
         repositories:
           - "discourse-adplugin"
@@ -46,20 +47,19 @@ jobs:
           - "discourse-graphviz"
           - "discourse-group-tracker"
           - "discourse-invite-tokens"
+          - "discourse-linkedin-auth"
           - "discourse-login-with-amazon"
           - "discourse-logster-rate-limit-checker"
           - "discourse-logster-transporter"
           - "discourse-lti"
           - "discourse-math"
+          - "discourse-microsoft-auth"
           - "discourse-moderator-attention"
           - "discourse-no-bump"
           - "discourse-oauth2-basic"
           - "discourse-openid-connect"
           - "discourse-patreon"
           - "discourse-perspective-api"
-          - "discourse-plugin-discord-auth"
-          - "discourse-plugin-linkedin-auth"
-          - "discourse-plugin-office365-auth"
           - "discourse-plugin-skeleton"
           - "discourse-policy"
           - "discourse-prometheus"
