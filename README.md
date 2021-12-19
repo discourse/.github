@@ -1,6 +1,6 @@
 # Discourse Plugin CI Workflows
 
-This repository is responsible for distributing plugin CI workflows to [all official plugins](https://github.com/discourse/.github/blob/main/.github/workflows/update_ci.yml).
+This repository is responsible for distributing plugin CI workflows to [all official plugins](https://github.com/discourse/.github/blob/main/repositories.yml).
 
 ## Deployment
 
