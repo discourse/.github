@@ -46,7 +46,7 @@ jobs:
       - name: Start redis
         run: |
           redis-server /etc/redis/redis.conf &
-      
+
       - name: Start Postgres
         run: |
           chown -R postgres /var/run/postgresql
@@ -94,12 +94,9 @@ jobs:
         id: app-cache
         with:
           path: tmp/app-cache
-          key: >- # postgres version, hash of migrations, "parallel?"
-            ${{ runner.os }}-
+          key: >-
             ${{ hashFiles('.github/workflows/tests.yml') }}-
-            ${{ matrix.postgres }}-
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
-            ${{ env.USES_PARALLEL_DATABASES }}
 
       - name: Restore database from cache
         if: steps.app-cache.outputs.cache-hit == 'true'
