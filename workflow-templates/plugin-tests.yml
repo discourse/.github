@@ -14,8 +14,8 @@ jobs:
   build:
     name: ${{ matrix.build_type }}
     runs-on: ubuntu-latest
-    container: discourse/discourse_test:slim${{ matrix.build_type == 'frontend' && '-browsers' || '' }}
-    timeout-minutes: 30
+    container: discourse/discourse_test:slim${{ startsWith(matrix.build_type, 'frontend') && '-browsers' || '' }}
+    timeout-minutes: 60
 
     env:
       DISCOURSE_HOSTNAME: www.example.com
@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        build_type: ["backend", "frontend"]
+        build_type: ["backend", "frontend-legacy", "frontend"]
 
     steps:
       - uses: actions/checkout@v2
@@ -146,6 +146,11 @@ jobs:
           fi
 
       - name: Plugin QUnit
+        if: matrix.build_type == 'frontend-legacy' && steps.check_qunit.outputs.files_exist == 'true'
+        run: QUNIT_EMBER_CLI=0 bundle exec rake plugin:qunit['${{ github.event.repository.name }}','1200000']
+        timeout-minutes: 10
+
+      - name: Plugin QUnit (Ember CLI)
         if: matrix.build_type == 'frontend' && steps.check_qunit.outputs.files_exist == 'true'
-        run: bundle exec rake plugin:qunit['${{ github.event.repository.name }}','1200000']
+        run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ github.event.repository.name }}','1200000']
         timeout-minutes: 10
