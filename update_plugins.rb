@@ -41,11 +41,12 @@ repositories.each do |repo|
     begin
       run "gh", "pr", "create", "-f", "--head", BRANCH, "--body", PR_BODY
       puts "✅ PR created for '#{repo}'"
-    rescue
-      puts "Failed to create PR. Maybe it already exists"
+    rescue => e
+      puts "Failed to create PR. Maybe it already exists?"
+      puts e.inspect
       puts "❓ PR already exists for '#{repo}'"
     end
-    sleep 10 # Avoid hitting GitHub rate limiting
+    sleep 15 # Avoid hitting GitHub rate limiting
   end
 end
 
