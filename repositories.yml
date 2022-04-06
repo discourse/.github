@@ -74,6 +74,7 @@ repositories:
   - "discourse-theme-creator"
   - "discourse-tooltips"
   - "discourse-translator"
+  - "discourse-url-filters"
   - "discourse-user-card-badges"
   - "discourse-user-notes"
   - "discourse-vk-auth"
