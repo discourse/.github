@@ -6,16 +6,19 @@ on:
 jobs:
   update-ci:
     runs-on: ubuntu-latest
+
     steps:
       - name: checkout .github
         uses: actions/checkout@v3
+
       - name: setup git
         run: |
           git config --global user.name discoursebuild
           git config --global user.email build@discourse.org
+
       - name: Run updates
         env:
           GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
         run: |
           gh auth setup-git
-          ./update_plugins.rb
+          node update-plugins.js
