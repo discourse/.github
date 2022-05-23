@@ -27,23 +27,23 @@ const ThrottledOctokit = Octokit.plugin(throttling);
 const octokit = new ThrottledOctokit({
   auth: process.env["GITHUB_TOKEN"],
   throttle: {
-    minimumSecondaryRateRetryAfter: 15,
+    minimumSecondaryRateRetryAfter: 30,
 
     onRateLimit: (retryAfter, options) => {
-      octokit.log.warn(
-        `Request quota exhausted for request ${options.method} ${options.url}`
-      );
-
-      if (options.request.retryCount < 5) {
-        octokit.log.info(`Retrying after ${retryAfter} seconds!`);
+      if (options.request.retryCount < 10) {
+        octokit.log.warn(
+          `Request quota exhausted for request ${options.method} ${options.url}`,
+          `Retrying after ${retryAfter} seconds!`
+        );
         return true;
       }
     },
 
     onSecondaryRateLimit: (retryAfter, options) => {
-      if (options.request.retryCount < 5) {
+      if (options.request.retryCount < 10) {
         octokit.log.warn(
-          `SecondaryRateLimit detected for request ${options.method} ${options.url}`
+          `Request quota exhausted for request ${options.method} ${options.url}`,
+          `Retrying after ${retryAfter} seconds!`
         );
         return true;
       }
@@ -97,12 +97,14 @@ for (const repository of repositories) {
     });
     console.log(`✅ PR created for '${repository}'`);
   } catch (error) {
-    const { message } = error.response.data.errors[0];
-    if (/A pull request already exists/.test(message)) {
+    const message = error.response?.data?.errors?.[0]?.message;
+
+    if (message && /A pull request already exists/.test(message)) {
       console.log(`✅ PR already exists for '${repository}'`);
     } else {
       console.error(`❓ Failed to create PR for '${repository}'`);
       console.error(error);
+      break;
     }
   }
 }
