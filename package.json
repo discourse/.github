@@ -1,11 +1,17 @@
 {
   "name": "discourse-github-actions-workflows",
   "version": "1.0.0",
-  "main": "",
-  "repository": "git@github.com:discourse/.github.git",
+  "repository": "https://github.com/discourse/.github",
   "author": "Discourse",
   "license": "GPL-2.0-only",
+  "type": "module",
+  "dependencies": {
+    "@octokit/core": "^3.6.0",
+    "@octokit/plugin-throttling": "^3.6.2",
+    "glob": "^8.0.3",
+    "yaml": "^2.1.0"
+  },
   "devDependencies": {
-    "eslint-config-discourse": "^1.1.5"
+    "eslint-config-discourse": "^3.1.0"
   }
 }
