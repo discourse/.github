@@ -8,13 +8,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout .github
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: setup git
+      - name: Setup Git
         run: |
           git config --global user.name discoursebuild
           git config --global user.email build@discourse.org
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: yarn
+
+      - name: Yarn install
+        run: yarn install
 
       - name: Run updates
         env:
