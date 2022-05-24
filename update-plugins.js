@@ -42,13 +42,21 @@ const octokit = new ThrottledOctokit({
     onSecondaryRateLimit: (retryAfter, options) => {
       if (options.request.retryCount < 10) {
         octokit.log.warn(
-          `Request quota exhausted for request ${options.method} ${options.url}`,
+          `Secondary rate limit hit for ${options.method} ${options.url}`,
           `Retrying after ${retryAfter} seconds!`
         );
         return true;
       }
     },
   },
+});
+
+// Workaround for @octokit/plugin-throttling bug
+// See: https://github.com/octokit/plugin-throttling.js/pull/462
+octokit.hook.after("request", async (response, options) => {
+  if (options.request.retryCount) {
+    options.request.retryCount = 0;
+  }
 });
 
 const { repositories } = parse(await fs.readFile("./repositories.yml", "utf8"));
