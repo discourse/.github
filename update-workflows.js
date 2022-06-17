@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable no-restricted-globals */
 import * as fs from "node:fs/promises";
-import process from "node:process";
+import { argv, env, exit } from "node:process";
 import path from "node:path";
 import { execSync, spawnSync } from "node:child_process";
 import glob from "glob";
@@ -15,7 +15,7 @@ const PR_BODY = "Updates CI from discourse/.github";
 
 function run(command, ...args) {
   console.log(`> ${command} ${args.join(" ")}`);
-  const { error, output } = spawnSync(command, args, { cwd: "./plugin" });
+  const { error, output } = spawnSync(command, args, { cwd: "./repo" });
 
   if (error) {
     console.error(error, output);
@@ -25,7 +25,7 @@ function run(command, ...args) {
 const ThrottledOctokit = Octokit.plugin(throttling);
 
 const octokit = new ThrottledOctokit({
-  auth: process.env["GITHUB_TOKEN"],
+  auth: env["GITHUB_TOKEN"],
   throttle: {
     minimumSecondaryRateRetryAfter: 30,
 
@@ -59,26 +59,34 @@ octokit.hook.after("request", async (response, options) => {
   }
 });
 
-const { repositories } = parse(await fs.readFile("./repositories.yml", "utf8"));
-const workflows = glob.sync("./workflow-templates/*.yml");
+if (argv[2] !== "plugins" && argv[2] !== "themes") {
+  console.log("Usage: node update-workflows.js [plugins|themes]");
+  exit(1);
+}
+
+const type = argv[2];
+const { repositories } = parse(await fs.readFile(`./${type}.yml`, "utf8"));
+const workflows = glob.sync(
+  `./${type === "themes" ? "theme-" : ""}workflow-templates/*.yml`
+);
 
 for (const repository of repositories) {
-  await fs.rm("./plugin", { recursive: true, force: true });
+  await fs.rm("./repo", { recursive: true, force: true });
 
   execSync(
-    `git clone https://github.com/discourse/${repository} -q --depth 1 plugin`
+    `git clone https://github.com/discourse/${repository} -q --depth 1 repo`
   );
 
-  await fs.mkdir("./plugin/.github/workflows", { recursive: true });
+  await fs.mkdir("./repo/.github/workflows", { recursive: true });
   await Promise.all(
     workflows.map((workflowPath) => {
       const filename = path.basename(workflowPath);
-      return fs.cp(workflowPath, `./plugin/.github/workflows/${filename}`);
+      return fs.cp(workflowPath, `./repo/.github/workflows/${filename}`);
     })
   );
 
   const anyChanges =
-    execSync("git -C plugin status --porcelain", {
+    execSync("git -C repo status --porcelain", {
       encoding: "utf8",
     }).trim() !== "";
 
@@ -117,4 +125,4 @@ for (const repository of repositories) {
   }
 }
 
-await fs.rm("./plugin", { recursive: true, force: true });
+await fs.rm("./repo", { recursive: true, force: true });

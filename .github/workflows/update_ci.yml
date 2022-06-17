@@ -29,4 +29,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
         run: |
           gh auth setup-git
-          node update-plugins.js
+          node update-workflows.js plugins
+          node update-workflows.js themes
