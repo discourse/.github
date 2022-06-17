@@ -12,6 +12,8 @@ import { throttling } from "@octokit/plugin-throttling";
 const TITLE = "DEV: Update CI workflows";
 const BRANCH = "update-ci";
 const PR_BODY = "Updates CI from discourse/.github";
+const RETRY_COUNT = 20;
+const DELAY = 5 * 60;
 
 function run(command, ...args) {
   console.log(`> ${command} ${args.join(" ")}`);
@@ -27,10 +29,10 @@ const ThrottledOctokit = Octokit.plugin(throttling);
 const octokit = new ThrottledOctokit({
   auth: env["GITHUB_TOKEN"],
   throttle: {
-    minimumSecondaryRateRetryAfter: 30,
+    minimumSecondaryRateRetryAfter: DELAY,
 
     onRateLimit: (retryAfter, options) => {
-      if (options.request.retryCount < 10) {
+      if (options.request.retryCount < RETRY_COUNT) {
         octokit.log.warn(
           `Request quota exhausted for request ${options.method} ${options.url}`,
           `Retrying after ${retryAfter} seconds!`
@@ -40,7 +42,7 @@ const octokit = new ThrottledOctokit({
     },
 
     onSecondaryRateLimit: (retryAfter, options) => {
-      if (options.request.retryCount < 10) {
+      if (options.request.retryCount < RETRY_COUNT) {
         octokit.log.warn(
           `Secondary rate limit hit for ${options.method} ${options.url}`,
           `Retrying after ${retryAfter} seconds!`
