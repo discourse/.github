@@ -10,5 +10,6 @@ repositories:
   - "discourse-post-height-detective"
   - "discourse-search-banner"
   - "Discourse-Slick-image-gallery"
+  - "discourse-theme-component-skeleton"
   - "Discourse-Tiles-image-gallery"
   - "discourse-topic-thumbnails"
