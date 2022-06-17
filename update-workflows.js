@@ -75,9 +75,14 @@ const workflows = glob.sync(
 for (const repository of repositories) {
   await fs.rm("./repo", { recursive: true, force: true });
 
-  execSync(
-    `git clone https://github.com/discourse/${repository} -q --depth 1 repo`
-  );
+  try {
+    execSync(
+      `git clone https://github.com/discourse/${repository} -q --depth 1 repo`
+    );
+  } catch (e) {
+    console.error(`🔥 Error cloning '${repository}'`, e);
+    continue;
+  }
 
   await fs.mkdir("./repo/.github/workflows", { recursive: true });
   await Promise.all(
