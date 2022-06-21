@@ -23,6 +23,7 @@ repositories:
   - "discourse-chat"
   - "discourse-chat-integration"
   - "discourse-checklist"
+  - "discourse-client-performance"
   - "discourse-code-review"
   - "discourse-crowd"
   - "discourse-data-explorer"
