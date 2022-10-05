@@ -34,14 +34,14 @@ jobs:
 
       - name: ESLint
         if: ${{ !cancelled() }}
-        run: yarn eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,assets}/javascripts
+        run: yarn eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
 
       - name: Prettier
         if: ${{ !cancelled() }}
         shell: bash
         run: |
           yarn prettier -v
-          if [ 0 -lt $(find assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.es6" \) 2> /dev/null | wc -l) ]; then
+          if [ 0 -lt $(find assets admin/assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.es6" \) 2> /dev/null | wc -l) ]; then
             yarn prettier --list-different "assets/**/*.{scss,js,es6}"
           fi
           if [ 0 -lt $(find test -type f \( -name "*.js" -or -name "*.es6" \) 2> /dev/null | wc -l) ]; then
@@ -50,7 +50,7 @@ jobs:
 
       - name: Ember template lint
         if: ${{ !cancelled() }}
-        run: yarn ember-template-lint --no-error-on-unmatched-pattern assets/javascripts
+        run: yarn ember-template-lint --no-error-on-unmatched-pattern assets/javascripts admin/assets/javascripts
 
       - name: Rubocop
         if: ${{ !cancelled() }}
