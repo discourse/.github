@@ -1,17 +1,77 @@
-name: Plugin Tests
+name: Discourse Plugin
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_call:
+    secrets:
+      ssh_private_key:
+        description: 'Optional SSH private key to be used when cloning additional plugin repos'
+        required: false
 
 concurrency:
-  group: plugin-tests-${{ format('{0}-{1}', github.head_ref || github.run_number, github.job) }}
+  group: discourse-plugin-${{ format('{0}-{1}', github.head_ref || github.run_number, github.job) }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  linting:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          cache: yarn
+
+      - name: Yarn install
+        run: yarn install
+
+      - name: Set up ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+          bundler-cache: true
+
+      - name: ESLint
+        if: ${{ !cancelled() }}
+        run: yarn eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
+
+      - name: Prettier
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          yarn prettier -v
+          if [ 0 -lt $(find assets admin/assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.es6" -or -name "*.hbs" \) 2> /dev/null | wc -l) ]; then
+            yarn prettier --list-different "assets/**/*.{scss,js,es6,hbs}"
+          fi
+          if [ 0 -lt $(find test -type f \( -name "*.js" -or -name "*.es6" \) 2> /dev/null | wc -l) ]; then
+            yarn prettier --list-different "test/**/*.{js,es6}"
+          fi
+
+      - name: Ember template lint
+        if: ${{ !cancelled() }}
+        run: yarn ember-template-lint --no-error-on-unmatched-pattern assets/javascripts
+
+      # Separated due to https://github.com/ember-template-lint/ember-template-lint/issues/2758
+      - name: Ember template lint (admin)
+        if: ${{ !cancelled() }}
+        run: yarn ember-template-lint --no-error-on-unmatched-pattern admin/assets/javascripts
+
+      - name: Rubocop
+        if: ${{ !cancelled() }}
+        run: bundle exec rubocop .
+
+      - name: Syntax Tree
+        if: ${{ !cancelled() }}
+        run: |
+          if test -f .streerc; then
+            bundle exec stree check Gemfile $(git ls-files '*.rb') $(git ls-files '*.rake')
+          else
+            echo "Stree config not detected for this repository. Skipping."
+          fi
+
+  tests:
     name: ${{ matrix.build_type }}
     runs-on: ubuntu-latest
     container: discourse/discourse_test:slim${{ startsWith(matrix.build_type, 'frontend') && '-browsers' || '' }}
@@ -46,6 +106,47 @@ jobs:
         run: |
           git config --global user.email "ci@ci.invalid"
           git config --global user.name "Discourse CI"
+
+      - name: Configure SSH Keys
+        shell: bash
+        run: |
+          if [ "${{ secrets.ssh_private_key }}" == '' ]; then
+            echo "No private key supplied"
+          else
+            eval "$(ssh-agent)"
+            echo "${{ secrets.ssh_private_key }}" | ssh-add -
+            echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+            echo "SSHAGENT_PID=$SSHAGENT_PID" >> $GITHUB_ENV
+          fi
+
+      - name: Install required plugins
+        env:
+          GIT_SSH_COMMAND: 'ssh -o StrictHostKeyChecking=no'
+        run: |
+          require 'json'
+
+          metadata_filename = "plugins/${{ github.event.repository.name }}/about.json"
+
+          if !File.exists?(metadata_filename)
+            puts "No about.json found"
+            exit 0
+          end
+
+          parsed = JSON.parse(File.read(metadata_filename))
+
+          plugins = parsed.dig("tests", "requiredPlugins")
+          if plugins.nil?
+            puts "No plugins found"
+            exit 0
+          end
+
+          plugins.each do |plugin_url|
+            puts "Cloning #{plugin_url}..."
+            system("git", "-C", "plugins", "clone", "--depth", "1", plugin_url, exception: true)
+          end
+
+          puts "Done cloning required plugins"
+        shell: ruby {0}
 
       - name: Start redis
         run: |
