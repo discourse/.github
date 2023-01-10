@@ -6,6 +6,9 @@ on:
       repository:
         type: string
         required: false
+      name:
+        type: string
+        required: false
     secrets:
       ssh_private_key:
         description: 'Optional SSH private key to be used when cloning additional plugin repos'
