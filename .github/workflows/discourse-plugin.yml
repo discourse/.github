@@ -2,6 +2,10 @@ name: Discourse Plugin
 
 on:
   workflow_call:
+    inputs:
+      repository:
+        type: string
+        required: false
     secrets:
       ssh_private_key:
         description: 'Optional SSH private key to be used when cloning additional plugin repos'
@@ -17,6 +21,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repository }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -99,6 +105,7 @@ jobs:
       - name: Install plugin
         uses: actions/checkout@v3
         with:
+          repository: ${{ inputs.repository }}
           path: plugins/${{ github.event.repository.name }}
           fetch-depth: 1
 
