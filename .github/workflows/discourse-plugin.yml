@@ -1,5 +1,8 @@
 name: Discourse Plugin
 
+env:
+  WORKFLOW_VERSION: 1
+
 on:
   workflow_call:
     secrets:
@@ -108,7 +111,7 @@ jobs:
           git config --global user.name "Discourse CI"
 
       - name: Clone additional plugins
-        uses: discourse/.github/actions/clone-additional-plugins@v1
+        uses: discourse/.github/actions/clone-additional-plugins@v${{ env.WORKFLOW_VERSION }}
         with:
           ssh_private_key: ${{ secrets.ssh_private_key }}
 
