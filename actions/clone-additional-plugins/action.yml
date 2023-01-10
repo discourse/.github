@@ -1,0 +1,46 @@
+name: Install Additional Plugins
+description: Installs any additional plugins listed in this plugin/theme's `about.json` (under `.tests.requiredPlugins`)
+inputs:
+  ssh_private_key:
+    description: 'Optional SSH private key, if one or more of the repos is private'
+    required: false
+runs:
+  using: "composite"
+  steps:
+    - name: Configure SSH Keys
+      if: inputs.ssh_private_key != ''
+      shell: bash
+      run: |
+        eval "$(ssh-agent)"
+        echo "${{ inputs.ssh_private_key }}" | ssh-add -
+        echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+        echo "SSHAGENT_PID=$SSHAGENT_PID" >> $GITHUB_ENV
+
+    - name: Install required plugins
+      env:
+        GIT_SSH_COMMAND: 'ssh -o StrictHostKeyChecking=no'
+      run: |
+        require 'json'
+
+        metadata_filename = "plugins/${{ github.event.repository.name }}/about.json"
+
+        if !File.exists?(metadata_filename)
+          puts "No about.json found"
+          exit 0
+        end
+
+        parsed = JSON.parse(File.read(metadata_filename))
+
+        plugins = parsed.dig("tests", "requiredPlugins")
+        if plugins.nil?
+          puts "No plugins found"
+          exit 0
+        end
+
+        plugins.each do |plugin_url|
+          puts "Cloning #{plugin_url}..."
+          system("git", "-C", "plugins", "clone", "--depth", "1", plugin_url, exception: true)
+        end
+
+        puts "Done cloning required plugins"
+      shell: ruby {0}
