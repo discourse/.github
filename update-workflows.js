@@ -98,7 +98,7 @@ for (const repository of repositories) {
     ".github/workflows/component-linting.yml",
     ".github/workflows/component-tests.yml",
   ];
-  run("git", "rm", ...oldWorkflowFiles);
+  run("git", "rm", "--ignore-unmatch", ...oldWorkflowFiles);
 
   const anyChanges =
     execSync("git -C repo status --porcelain", {
