@@ -8,4 +8,4 @@ on:
 
 jobs:
   ci:
-    uses: "discourse/.github/.github/workflows/discourse-theme.yml@v1"
+    uses: discourse/.github/.github/workflows/discourse-theme.yml@v1
