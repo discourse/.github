@@ -1,0 +1,23 @@
+name: Test Workflow Templates
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: test-templates-${{ format('{0}-{1}', github.head_ref || github.run_number, github.job) }}
+  cancel-in-progress: true
+
+jobs:
+  theme-workflow:
+    uses: ./.github/workflows/discourse-theme.yml
+    with:
+      repository: "discourse/DiscoTOC"
+
+  plugin-workflow:
+    uses: ./.github/workflows/discourse-plugin.yml
+    with:
+      repository: "discourse/discourse-calendar"
+      name: "discourse-calendar"
