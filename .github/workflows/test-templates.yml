@@ -11,14 +11,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
+  theme-workflow:
+    uses: discourse/.github/.github/workflows/discourse-theme.yml@v1
+    with:
+      repository: "discourse/DiscoTOC"
 
-    steps:
-      - uses: discourse/.github/.github/workflows/discourse-theme.yml@v1
-        with:
-          repository: "discourse/DiscoTOC"
-
-      - uses: discourse/.github/.github/workflows/discourse-plugin.yml@v1
-        with:
-          repository: "discourse/discourse-calendar"
+  plugin-workflow:
+    uses: discourse/.github/.github/workflows/discourse-plugin.yml@v1
+    with:
+      repository: "discourse/discourse-calendar"
