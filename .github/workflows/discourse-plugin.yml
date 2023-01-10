@@ -89,7 +89,7 @@ jobs:
       RAILS_ENV: test
       PGUSER: discourse
       PGPASSWORD: discourse
-      PLUGIN_NAME: ${{ inputs.repository && "test-plugin" || github.event.repository.name }}
+      PLUGIN_NAME: ${{ inputs.repository && 'test-plugin' || github.event.repository.name }}
 
     strategy:
       fail-fast: false
