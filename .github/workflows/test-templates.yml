@@ -12,11 +12,11 @@ concurrency:
 
 jobs:
   theme-workflow:
-    uses: ./discourse-theme.yml
+    uses: ./.github/workflows/discourse-theme.yml
     with:
       repository: "discourse/DiscoTOC"
 
   plugin-workflow:
-    uses: ./discourse-plugin.yml
+    uses: ./.github/workflows/discourse-plugin.yml
     with:
       repository: "discourse/discourse-calendar"
