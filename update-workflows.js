@@ -69,7 +69,7 @@ if (argv[2] !== "plugins" && argv[2] !== "themes") {
 const type = argv[2];
 const { repositories } = parse(await fs.readFile(`./${type}.yml`, "utf8"));
 const workflows = glob.sync(
-  `./${type === "themes" ? "theme-" : ""}workflow-templates/*.yml`
+  `./${type === "themes" ? "theme-" : "plugin-"}workflow-templates/*.yml`
 );
 
 for (const repository of repositories) {
@@ -91,6 +91,14 @@ for (const repository of repositories) {
       return fs.cp(workflowPath, `./repo/.github/workflows/${filename}`);
     })
   );
+
+  const oldWorkflowFiles = [
+    ".github/workflows/plugin-linting.yml",
+    ".github/workflows/plugin-tests.yml",
+    ".github/workflows/component-linting.yml",
+    ".github/workflows/component-tests.yml",
+  ];
+  run("git", "rm", ...oldWorkflowFiles);
 
   const anyChanges =
     execSync("git -C repo status --porcelain", {
