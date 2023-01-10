@@ -1,11 +1,14 @@
 name: Install Additional Plugins
 description: Installs any additional plugins listed in this plugin/theme's `about.json` (under `.tests.requiredPlugins`)
+
 inputs:
   ssh_private_key:
     description: 'Optional SSH private key, if one or more of the repos is private'
     required: false
+
 runs:
   using: "composite"
+
   steps:
     - name: Configure SSH Keys
       if: inputs.ssh_private_key != ''
