@@ -19,5 +19,5 @@ jobs:
   plugin-workflow:
     uses: ./.github/workflows/discourse-plugin.yml
     with:
-      repository: "discourse/discourse-calendar"
-      name: "discourse-calendar"
+      repository: "discourse/discourse-encrypt"
+      name: "discourse-encrypt"
