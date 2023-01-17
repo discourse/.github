@@ -103,7 +103,7 @@ jobs:
           matrix = []
 
           matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,es6}").any?
-          matrix << 'backend' if Dir.glob("spec/**/*.rb").reject { _1.start_with?("spec/components") }.any?
+          matrix << 'backend' if Dir.glob("spec/**/*.rb").reject { _1.start_with?("spec/system") }.any?
           matrix << 'system' if Dir.glob("spec/system/**/*.rb").any?
 
           puts "Detected test types: #{matrix.inspect}"
