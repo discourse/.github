@@ -83,7 +83,7 @@ jobs:
   tests:
     name: ${{ matrix.build_type }}
     runs-on: ubuntu-latest
-    container: discourse/discourse_test:slim${{ startsWith(matrix.build_type, 'frontend') && '-browsers' || '' }}
+    container: discourse/discourse_test:slim${{ (matrix.build_type == 'frontend' || matrix.build_type == 'system') && '-browsers' || '' }}
     timeout-minutes: 30
 
     env:
@@ -98,7 +98,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        build_type: ["backend", "frontend"]
+        build_type: ['backend', 'frontend', 'system']
 
     steps:
       - uses: actions/checkout@v3
@@ -225,3 +225,26 @@ jobs:
         if: matrix.build_type == 'frontend' && steps.check_qunit.outputs.files_exist == 'true'
         run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
         timeout-minutes: 10
+
+      - name: Check System Tests existence
+        id: check_system
+        shell: bash
+        run: |
+          if [ 0 -lt $(find plugins/${{ env.PLUGIN_NAME }}/spec/system -type f -name "*.rb" 2> /dev/null | wc -l) ]; then
+            echo "files_exist=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Ember Build for System Tests
+        if: matrix.build_type == 'system' && steps.check_system.outputs.files_exist == 'true'
+        run: bin/ember-cli --build
+
+      - name: Plugin System Tests
+        if: matrix.build_type == 'system' && steps.check_system.outputs.files_exist == 'true'
+        run: LOAD_PLUGINS=1 bin/system_rspec plugins/*/spec/system
+
+      - name: Upload failed system test screenshots
+        uses: actions/upload-artifact@v3
+        if: matrix.build_type == 'system' && steps.check_system.outputs.files_exist == 'true' && failure()
+        with:
+          name: failed-system-test-screenshots
+          path: tmp/screenshots/
