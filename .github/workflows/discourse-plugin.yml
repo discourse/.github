@@ -80,11 +80,42 @@ jobs:
             echo "Stree config not detected for this repository. Skipping."
           fi
 
+  check_for_tests:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.check_tests.outputs.matrix }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repository }}
+          path: tmp/plugin
+          fetch-depth: 1
+
+      - name: Check For Test Types
+        id: check_tests
+        shell: ruby {0}
+        working-directory: tmp/plugin
+        run: |
+          require 'json'
+
+          matrix = []
+
+          matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,es6}").any?
+          matrix << 'backend' if Dir.glob("spec/**/*.rb").reject { _1.start_with?("spec/components") }.any?
+          matrix << 'system' if Dir.glob("spec/system/**/*.rb").any?
+
+          puts "Detected test types: #{matrix.inspect}"
+
+          File.write(ENV["GITHUB_OUTPUT"], "matrix=#{matrix.to_json}")
+
   tests:
-    name: ${{ matrix.build_type }}
+    name: ${{ matrix.build_type }}_tests
     runs-on: ubuntu-latest
     container: discourse/discourse_test:slim${{ (matrix.build_type == 'frontend' || matrix.build_type == 'system') && '-browsers' || '' }}
     timeout-minutes: 30
+    needs: check_for_tests
 
     env:
       DISCOURSE_HOSTNAME: www.example.com
@@ -98,7 +129,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        build_type: ['backend', 'frontend', 'system']
+        build_type: ${{ fromJSON(needs.check_for_tests.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v3
@@ -201,50 +232,26 @@ jobs:
         if: steps.app-cache.outputs.cache-hit != 'true'
         run: rm -rf tmp/app-cache/uploads && cp -r public/uploads tmp/app-cache/uploads
 
-      - name: Check spec existence
-        id: check_spec
-        shell: bash
-        run: |
-          if [ 0 -lt $(find plugins/${{ env.PLUGIN_NAME }}/spec -type f -name "*.rb" 2> /dev/null | wc -l) ]; then
-            echo "files_exist=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Plugin RSpec
-        if: matrix.build_type == 'backend' && steps.check_spec.outputs.files_exist == 'true'
+        if: matrix.build_type == 'backend'
         run: bin/rake plugin:spec[${{ env.PLUGIN_NAME }}]
 
-      - name: Check QUnit existence
-        id: check_qunit
-        shell: bash
-        run: |
-          if [ 0 -lt $(find plugins/${{ env.PLUGIN_NAME }}/test/javascripts -type f \( -name "*.js" -or -name "*.es6" \) 2> /dev/null | wc -l) ]; then
-            echo "files_exist=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Plugin QUnit
-        if: matrix.build_type == 'frontend' && steps.check_qunit.outputs.files_exist == 'true'
+        if: matrix.build_type == 'frontend'
         run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
         timeout-minutes: 10
 
-      - name: Check System Tests existence
-        id: check_system
-        shell: bash
-        run: |
-          if [ 0 -lt $(find plugins/${{ env.PLUGIN_NAME }}/spec/system -type f -name "*.rb" 2> /dev/null | wc -l) ]; then
-            echo "files_exist=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Ember Build for System Tests
-        if: matrix.build_type == 'system' && steps.check_system.outputs.files_exist == 'true'
+        if: matrix.build_type == 'system'
         run: bin/ember-cli --build
 
       - name: Plugin System Tests
-        if: matrix.build_type == 'system' && steps.check_system.outputs.files_exist == 'true'
+        if: matrix.build_type == 'system'
         run: LOAD_PLUGINS=1 bin/system_rspec plugins/*/spec/system
 
       - name: Upload failed system test screenshots
         uses: actions/upload-artifact@v3
-        if: matrix.build_type == 'system' && steps.check_system.outputs.files_exist == 'true' && failure()
+        if: matrix.build_type == 'system' && failure()
         with:
           name: failed-system-test-screenshots
           path: tmp/screenshots/
