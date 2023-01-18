@@ -1,0 +1,45 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate_version:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repository }}
+          fetch-depth: 1
+
+      - name: Validate Version
+        shell: ruby {0}
+        run: |
+          version = File.read("VERSION").strip
+          if !version.match?(/\A\d+\z/)
+            puts "VERSION file must contain a single integer"
+            exit 1
+          end
+          puts "VERSION = v#{version}"
+
+  tag_version:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validate_version
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.repository }}
+          fetch-depth: 1
+      - name: Apply Tag
+        shell: ruby {0}
+        run: |
+          version = File.read("VERSION").strip
+          tag = "v#{version}"
+          system "git", "tag", tag, "-f", exception: true
+          system "git", "push", "origin", tag, "-f", exception: true

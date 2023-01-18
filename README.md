@@ -7,11 +7,10 @@ workflows reference the reusable workflows via a versioned tag.
 
 ## Making Changes
 
-To make changes to the reusable workflows, first you need to make the change in a PR and merge it. Then you need to update the release tags.
+To make changes to the reusable workflows, make the change in a PR and merge it. The version tag will be automatically updated based on the contents of the VERSION file. If the integer in VERSION
+is unchanged, the tag will be moved to the latest commit and the change will apply instantly to all themes/plugins.
 
-If the change is 'breaking' (e.g. introduces a new linting step), push a new major tag, bump the tags referenced in `(plugin|theme)-workflow-templates`, and bump the versions on any action references starting with `uses: discourse/.github/`
-
-If the change is not breaking, move the existing major version tag to the tip of `main`. This change will instantly apply to all themes/plugins.
+If your change is 'breaking' (e.g. introduces a new linting step), bump the integer in VERSION and bump the referenced versions on any action references starting with `uses: discourse/.github/`
 
 ## Rolling out changes to templates
 
