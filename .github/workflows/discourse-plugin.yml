@@ -84,6 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.check_tests.outputs.matrix }}
+      has_tests: ${{ steps.check_tests.outputs.has_tests }}
 
     steps:
       - name: Checkout repo
@@ -109,6 +110,9 @@ jobs:
           puts "Detected test types: #{matrix.inspect}"
 
           File.write(ENV["GITHUB_OUTPUT"], "matrix=#{matrix.to_json}")
+          if matrix.any?
+            File.write(ENV["GITHUB_OUTPUT"], "has_tests=true")
+          end
 
   tests:
     name: ${{ matrix.build_type }}_tests
@@ -116,6 +120,7 @@ jobs:
     container: discourse/discourse_test:slim${{ (matrix.build_type == 'frontend' || matrix.build_type == 'system') && '-browsers' || '' }}
     timeout-minutes: 30
     needs: check_for_tests
+    if: ${{ needs.check_for_tests.has_tests }}
 
     env:
       DISCOURSE_HOSTNAME: www.example.com
