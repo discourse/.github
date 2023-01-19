@@ -109,9 +109,9 @@ jobs:
 
           puts "Detected test types: #{matrix.inspect}"
 
-          File.write(ENV["GITHUB_OUTPUT"], "matrix=#{matrix.to_json}")
+          File.write(ENV["GITHUB_OUTPUT"], "matrix=#{matrix.to_json}\n", mode: 'a+')
           if matrix.any?
-            File.write(ENV["GITHUB_OUTPUT"], "has_tests=true")
+            File.write(ENV["GITHUB_OUTPUT"], "has_tests=true\n", mode: 'a+')
           end
 
   tests:
