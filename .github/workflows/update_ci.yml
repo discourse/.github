@@ -8,12 +8,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
-
       - name: Setup Git
         run: |
           git config --global user.name discoursebuild
           git config --global user.email build@discourse.org
+
+      - uses: actions/checkout@v3
+        with:
+          repository: davidtaylorhq/mass-pr
+          fetch-depth: 1
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -24,10 +27,21 @@ jobs:
       - name: Yarn install
         run: yarn install
 
+      - uses: actions/checkout@v3
+        with:
+          path: ./mass-pr-workspace/.github
+
       - name: Run updates
         env:
           GITHUB_TOKEN: ${{ secrets.CI_TOKEN }}
         run: |
           gh auth setup-git
-          node update-workflows.js plugins
-          node update-workflows.js themes
+          PLUGIN_REPOS=$(ruby -e 'require "yaml"; puts YAML.load_file("./mass-pr-workspace/.github/plugins.yml")["repositories"].map{"discourse/#{_1}"}.join(" ")')
+          THEME_REPOS=$(ruby -e 'require "yaml"; puts YAML.load_file("./mass-pr-workspace/.github/themes.yml")["repositories"].map{"discourse/#{_1}"}.join(" ")')
+          yarn mass-pr \
+            --message "DEV: Update CI workflows" \
+            --branch "update-ci" \
+            --body "Updates CI from discourse/.github" \
+            --script ./scripts/update-workflows.sh \
+            --mode https \
+            $(echo $PLUGIN_REPOS) $(echo $THEME_REPOS)
