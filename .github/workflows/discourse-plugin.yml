@@ -115,7 +115,7 @@ jobs:
           end
 
   tests:
-    name: ${{ matrix.build_type || "" }}_tests
+    name: ${{ matrix.build_type || '' }}_tests
     runs-on: ubuntu-latest
     container: discourse/discourse_test:slim${{ (matrix.build_type == 'frontend' || matrix.build_type == 'system') && '-browsers' || '' }}
     timeout-minutes: 30
