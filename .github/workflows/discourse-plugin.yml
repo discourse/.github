@@ -158,6 +158,7 @@ jobs:
         uses: discourse/.github/actions/clone-additional-plugins@v1
         with:
           ssh_private_key: ${{ secrets.ssh_private_key }}
+          about_json_path: plugins/${{ env.PLUGIN_NAME }}/about.json
 
       - name: Start redis
         run: |
