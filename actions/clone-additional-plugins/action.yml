@@ -5,6 +5,9 @@ inputs:
   ssh_private_key:
     description: 'Optional SSH private key, if one or more of the repos is private'
     required: false
+  about_json_path:
+    description: Path to the about.json file
+    required: true
 
 runs:
   using: "composite"
@@ -25,7 +28,7 @@ runs:
       run: |
         require 'json'
 
-        metadata_filename = "plugins/${{ github.event.repository.name }}/about.json"
+        metadata_filename = "${{ inputs.about_json_path }}"
 
         if !File.exists?(metadata_filename)
           puts "No about.json found"
