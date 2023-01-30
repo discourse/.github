@@ -90,6 +90,9 @@ jobs:
       PGPASSWORD: discourse
 
     steps:
+      - name: Set working directory owner
+        run: chown root:root .
+
       - uses: actions/checkout@v3
         with:
           repository: discourse/discourse
