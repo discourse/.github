@@ -30,7 +30,7 @@ runs:
 
         metadata_filename = "${{ inputs.about_json_path }}"
 
-        if !File.exists?(metadata_filename)
+        if !File.exist?(metadata_filename)
           puts "No about.json found"
           exit 0
         end
