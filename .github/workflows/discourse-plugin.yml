@@ -9,6 +9,9 @@ on:
       name:
         type: string
         required: false
+      core_ref:
+        type: string
+        required: false
     secrets:
       ssh_private_key:
         description: 'Optional SSH private key to be used when cloning additional plugin repos'
@@ -144,6 +147,7 @@ jobs:
         with:
           repository: discourse/discourse
           fetch-depth: 1
+          ref: ${{ inputs.core_ref }}
 
       - name: Install plugin
         uses: actions/checkout@v3
