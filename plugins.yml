@@ -48,6 +48,7 @@ repositories:
   - "discourse-math"
   - "discourse-microsoft-auth"
   - "discourse-moderator-attention"
+  - "discourse-newsletter-integration"
   - "discourse-no-bump"
   - "discourse-oauth2-basic"
   - "discourse-openid-connect"
