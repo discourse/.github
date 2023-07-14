@@ -1,6 +1,7 @@
 repositories:
   - "discourse-adplugin"
   - "discourse-affiliate"
+  - "discourse-ai"
   - "discourse-akismet"
   - "discourse-algolia"
   - "discourse-animated-avatars"
