@@ -39,6 +39,7 @@ repositories:
   - "discourse-graphviz"
   - "discourse-group-tracker"
   - "discourse-invite-tokens"
+  - "discourse-jira"
   - "discourse-kolide"
   - "discourse-linkedin-auth"
   - "discourse-login-with-amazon"
