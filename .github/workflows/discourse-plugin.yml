@@ -78,7 +78,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           if test -f .streerc; then
-            bundle exec stree check Gemfile $(git ls-files '*.rb') $(git ls-files '*.rake')
+            bundle exec stree check Gemfile $(git ls-files '*.rb') $(git ls-files '*.rake') $(git ls-files '*.thor')
           else
             echo "Stree config not detected for this repository. Skipping."
           fi
