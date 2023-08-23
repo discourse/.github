@@ -298,4 +298,4 @@ jobs:
         if: matrix.build_type == 'system' && failure()
         with:
           name: failed-system-test-screenshots
-          path: tmp/screenshots/
+          path: tmp/capybara/*.png
