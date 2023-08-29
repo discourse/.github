@@ -54,7 +54,7 @@ jobs:
         shell: bash
         run: |
           yarn prettier -v
-          if [ 0 -lt $(find assets admin/assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.es6" -or -name "*.hbs" \) 2> /dev/null | wc -l) ]; then
+          if [ -n "$(find assets admin/assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.es6" -or -name "*.hbs" \) 2>/dev/null)" ]; then
             yarn prettier --list-different "{.,admin}/assets/**/*.{scss,js,es6,hbs}"
           fi
           if [ 0 -lt $(find test -type f \( -name "*.js" -or -name "*.es6" \) 2> /dev/null | wc -l) ]; then
