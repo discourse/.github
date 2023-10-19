@@ -8,7 +8,7 @@ on:
         required: false
     secrets:
       ssh_private_key:
-        description: 'Optional SSH private key to be used when cloning additional plugin repos'
+        description: "Optional SSH private key to be used when cloning additional plugin repos"
         required: false
 
 concurrency:
@@ -199,6 +199,7 @@ jobs:
           key: >-
             ${{ hashFiles('.github/workflows/tests.yml') }}-
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
+            ${{ env.RAILS_ENV }}
 
       - name: Restore database from cache
         if: steps.app-cache.outputs.cache-hit == 'true'
