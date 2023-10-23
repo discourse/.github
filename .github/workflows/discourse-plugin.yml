@@ -109,7 +109,7 @@ jobs:
 
           matrix = []
 
-          matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,es6}").any?
+          matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,es6,gjs}").any?
           matrix << 'backend' if Dir.glob("spec/**/*.rb").reject { _1.start_with?("spec/system") }.any?
           matrix << 'system' if Dir.glob("spec/system/**/*.rb").any?
 
