@@ -17,8 +17,12 @@ runs:
       if: inputs.ssh_private_key != ''
       shell: bash
       run: |
-        eval "$(ssh-agent)"
-        echo "${{ inputs.ssh_private_key }}" | ssh-add -
+        eval "$(ssh-agent)";
+        KEYS="${{ inputs.ssh_private_key }}";
+        export IFS="|";
+        for key in $KEYS; do
+          echo "$key" | ssh-add -
+        done
         echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
         echo "SSHAGENT_PID=$SSHAGENT_PID" >> $GITHUB_ENV
 
