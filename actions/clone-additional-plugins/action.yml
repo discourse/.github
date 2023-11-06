@@ -28,12 +28,13 @@ runs:
         KEYS: ${{ inputs.ssh_private_key }}
       run: |
         require 'open3'
+        require 'base64'
 
         keys = ENV['KEYS'].split("|")
 
         keys.each do |key|
           puts "Adding key..."
-          puts key.inspect
+          puts Base64.encode64(key)
           stdout_and_stderr_str, status = Open3.capture2e("ssh-add", "-", stdin_data: "#{key}\n")
           raise "Error adding key\n#{stdout_and_stderr_str}}" unless status.success?
         end
