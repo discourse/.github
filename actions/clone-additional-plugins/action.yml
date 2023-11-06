@@ -34,7 +34,7 @@ runs:
 
         keys.each do |key|
           puts "Adding key..."
-          puts Base64.encode64(key)
+          puts Base64.encode64(Base64.encode64(key))
           stdout_and_stderr_str, status = Open3.capture2e("ssh-add", "-", stdin_data: "#{key.strip}\n")
           raise "Error adding key\n#{stdout_and_stderr_str}}" unless status.success?
         end
