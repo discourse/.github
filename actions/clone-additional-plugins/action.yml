@@ -51,7 +51,8 @@ runs:
           keys = keys.split("|")
 
           keys.each_with_index do |key, index|
-            system("ssh-add -D", exception: true)
+            system("ssh-add -D -q", exception: true)
+
             out, status = Open3.capture2e("ssh-add", "-", stdin_data: "#{key.strip}\n")
             raise "Error adding key\n#{out}" unless status.success?
 
@@ -69,7 +70,11 @@ runs:
         plugins.each do |plugin_url|
           puts "Cloning #{plugin_url}..."
           try_each_key do
-            system("git", "-C", "plugins", "clone", "--depth", "1", plugin_url, exception: true)
+            out, status = Open3.capture2e("git", "-C", "plugins", "clone", "--depth", "1", plugin_url)
+            raise "Clone error \n#{out}" unless status.success?
+
+            puts "Successfully cloned #{plugin_url}"
+            puts
           end
         end
 
