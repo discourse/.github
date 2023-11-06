@@ -21,26 +21,9 @@ runs:
         echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
         echo "SSHAGENT_PID=$SSHAGENT_PID" >> $GITHUB_ENV
 
-    - name: Register Keys
-      if: inputs.ssh_private_key != ''
-      shell: ruby {0}
-      env:
-        KEYS: ${{ inputs.ssh_private_key }}
-      run: |
-        require 'open3'
-        require 'base64'
-
-        keys = ENV['KEYS'].split("|")
-
-        keys.each do |key|
-          puts "Adding key..."
-          puts Base64.encode64(Base64.encode64(key))
-          stdout_and_stderr_str, status = Open3.capture2e("ssh-add", "-", stdin_data: "#{key.strip}\n")
-          raise "Error adding key\n#{stdout_and_stderr_str}}" unless status.success?
-        end
-
     - name: Install required plugins
       env:
+        KEYS: ${{ inputs.ssh_private_key }}
         GIT_SSH_COMMAND: 'ssh -o StrictHostKeyChecking=no'
       run: |
         require 'json'
@@ -60,9 +43,29 @@ runs:
           exit 0
         end
 
+        def try_each_key
+          keys = ENV['KEYS']
+          return yield if keys.nil? || keys.length == 0
+
+          keys = keys.split("|")
+
+          keys.each_with_index do |key, index|
+            system("ssh-add -D", exception: true)
+            out, status = Open3.capture2e("ssh-add", "-", stdin_data: "#{key.strip}\n")
+            raise "Error adding key\n#{out}" unless status.success?
+
+            return yield
+          rescue => e
+            puts "Error: #{e}"
+            puts "Trying next key..." if index < keys.length - 1
+          end
+        end
+
         plugins.each do |plugin_url|
           puts "Cloning #{plugin_url}..."
-          system("git", "-C", "plugins", "clone", "--depth", "1", plugin_url, exception: true)
+          try_each_key do
+            system("git", "-C", "plugins", "clone", "--depth", "1", plugin_url, exception: true)
+          end
         end
 
         puts "Done cloning required plugins"
