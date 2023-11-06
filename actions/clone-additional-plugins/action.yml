@@ -13,18 +13,28 @@ runs:
   using: "composite"
 
   steps:
-    - name: Configure SSH Keys
+    - name: Start ssh agent
       if: inputs.ssh_private_key != ''
       shell: bash
       run: |
         eval "$(ssh-agent)";
-        KEYS="${{ inputs.ssh_private_key }}";
-        export IFS="|";
-        for key in $KEYS; do
-          echo "$key" | ssh-add -
-        done
         echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
         echo "SSHAGENT_PID=$SSHAGENT_PID" >> $GITHUB_ENV
+
+    - name: Register Keys
+      if: inputs.ssh_private_key != ''
+      shell: ruby {0}
+      env:
+        KEYS: ${{ inputs.ssh_private_key }}
+      run: |
+        require 'open3'
+
+        keys = ENV['KEYS'].split("|")
+
+        keys.each do |key|
+          stdout_and_stderr_str, status = Open3.capture2e("ssh-add", "-", stdin_data: key)
+          raise "Error adding key\n#{stdout_and_stderr_str}}" unless status.success?
+        end
 
     - name: Install required plugins
       env:
