@@ -58,7 +58,6 @@ runs:
 
             return yield
           rescue => e
-            puts "Error: #{e}"
             if index < keys.length - 1
               puts "Trying next key..."
             else
