@@ -32,6 +32,8 @@ runs:
         keys = ENV['KEYS'].split("|")
 
         keys.each do |key|
+          puts "Adding key..."
+          puts key.inspect
           stdout_and_stderr_str, status = Open3.capture2e("ssh-add", "-", stdin_data: key)
           raise "Error adding key\n#{stdout_and_stderr_str}}" unless status.success?
         end
