@@ -13,20 +13,21 @@ runs:
   using: "composite"
 
   steps:
-    - name: Configure SSH Keys
+    - name: Start ssh agent
       if: inputs.ssh_private_key != ''
       shell: bash
       run: |
-        eval "$(ssh-agent)"
-        echo "${{ inputs.ssh_private_key }}" | ssh-add -
+        eval "$(ssh-agent)";
         echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
         echo "SSHAGENT_PID=$SSHAGENT_PID" >> $GITHUB_ENV
 
     - name: Install required plugins
       env:
+        KEYS: ${{ inputs.ssh_private_key }}
         GIT_SSH_COMMAND: 'ssh -o StrictHostKeyChecking=no'
       run: |
         require 'json'
+        require 'open3'
 
         metadata_filename = "${{ inputs.about_json_path }}"
 
@@ -43,9 +44,37 @@ runs:
           exit 0
         end
 
+        def try_each_key
+          keys = ENV['KEYS']
+          return yield if keys.nil? || keys.length == 0
+
+          keys = keys.split("|")
+
+          keys.each_with_index do |key, index|
+            system("ssh-add -D -q", exception: true)
+
+            out, status = Open3.capture2e("ssh-add", "-", stdin_data: "#{key.strip}\n")
+            raise "Error adding key\n#{out}" unless status.success?
+
+            return yield
+          rescue => e
+            if index < keys.length - 1
+              puts "Trying next key..."
+            else
+              raise e
+            end
+          end
+        end
+
         plugins.each do |plugin_url|
           puts "Cloning #{plugin_url}..."
-          system("git", "-C", "plugins", "clone", "--depth", "1", plugin_url, exception: true)
+          try_each_key do
+            out, status = Open3.capture2e("git", "-C", "plugins", "clone", "--depth", "1", plugin_url)
+            raise "Clone error \n#{out}" unless status.success?
+
+            puts "Successfully cloned #{plugin_url}"
+            puts
+          end
         end
 
         puts "Done cloning required plugins"
