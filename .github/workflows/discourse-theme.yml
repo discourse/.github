@@ -107,6 +107,8 @@ jobs:
       RUBY_GLOBAL_METHOD_CACHE_SIZE: 131072
       PGUSER: discourse
       PGPASSWORD: discourse
+      RAILS_ENV: test
+      DISCOURSE_DEV_DB: discourse_test
 
     steps:
       - name: Set working directory owner
@@ -152,16 +154,6 @@ jobs:
           key: ${{ runner.os }}-gem-${{ hashFiles('**/Gemfile.lock') }}
           restore-keys: |
             ${{ runner.os }}-gem-
-
-      - name: Sets test Rails ENV
-        if: matrix.build_type == 'system'
-        run: |
-          echo "RAILS_ENV=test" >> $GITHUB_ENV
-
-      - name: Sets development Rails ENV
-        if: matrix.build_type == 'frontend'
-        run: |
-          echo "RAILS_ENV=development" >> $GITHUB_ENV
 
       - name: Setup gems
         run: |
