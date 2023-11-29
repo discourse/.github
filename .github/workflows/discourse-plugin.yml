@@ -14,7 +14,7 @@ on:
         required: false
     secrets:
       ssh_private_key:
-        description: 'Optional SSH private key to be used when cloning additional plugin repos'
+        description: "Optional SSH private key to be used when cloning additional plugin repos"
         required: false
 
 concurrency:
@@ -26,14 +26,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: ${{ inputs.repository }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: yarn
 
       - name: Yarn install
@@ -42,7 +42,7 @@ jobs:
       - name: Set up ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.1'
+          ruby-version: "3.2"
           bundler-cache: true
 
       - name: ESLint
@@ -94,7 +94,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ inputs.repository }}
           path: tmp/plugin
@@ -146,14 +146,14 @@ jobs:
       - name: Set working directory owner
         run: chown root:root .
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: discourse/discourse
           fetch-depth: 1
           ref: ${{ inputs.core_ref }}
 
       - name: Install plugin
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ inputs.repository }}
           path: plugins/${{ env.PLUGIN_NAME }}
