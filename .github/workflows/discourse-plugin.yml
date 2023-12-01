@@ -233,7 +233,12 @@ jobs:
 
       - name: Restore database from cache
         if: steps.app-cache.outputs.cache-hit == 'true'
-        run: script/silence_successful_output psql -f tmp/app-cache/cache.sql postgres
+        run: |
+          if test -f script/silence_successful_output; then
+            script/silence_successful_output psql -f tmp/app-cache/cache.sql postgres
+          else
+            psql -f tmp/app-cache/cache.sql postgres
+          fi
 
       - name: Restore uploads from cache
         if: steps.app-cache.outputs.cache-hit == 'true'
@@ -243,7 +248,11 @@ jobs:
         if: steps.app-cache.outputs.cache-hit != 'true'
         run: |
           bin/rake db:create
-          script/silence_successful_output bin/rake db:migrate
+          if test -f script/silence_successful_output; then
+            script/silence_successful_output bin/rake db:migrate
+          else
+            bin/rake db:migrate
+          fi
 
       - name: Dump database for cache
         if: steps.app-cache.outputs.cache-hit != 'true'
