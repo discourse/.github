@@ -147,7 +147,7 @@ jobs:
 
       matrix:
         build_type: ${{ fromJSON(needs.check_for_tests.outputs.matrix) }}
-        updated_ember: ${{ inputs.core_ref && [false] || [false, true] }}
+        updated_ember: ${{ inputs.core_ref && fromJSON('[false]') || fromJSON('[false, true]') }}
         exclude:
           - build_type: backend
             updated_ember: true
