@@ -342,7 +342,7 @@ jobs:
             This is currently marked as a 'neutral' test run, but will soon become required.
             See https://meta.discourse.org/t/287211 for upgrade information.
             Check the original GitHub run for logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            ",
+            "
             }
 
       - name: Ember Build for System Tests
