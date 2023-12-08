@@ -94,7 +94,7 @@ jobs:
           end
 
   test:
-    name: ${{ matrix.build_type || '' }}_tests
+    name: ${{ matrix.build_type || '' }}_tests${{ matrix.updated_ember && ' (optional Ember 5)' || '' }}
     needs: check_for_tests
     if: ${{ needs.check_for_tests.outputs.has_tests }}
     runs-on: ubuntu-latest
@@ -106,6 +106,7 @@ jobs:
 
       matrix:
         build_type: ${{ fromJSON(needs.check_for_tests.outputs.matrix) }}
+        updated_ember: [false, true]
 
     env:
       DISCOURSE_HOSTNAME: www.example.com
@@ -114,6 +115,7 @@ jobs:
       PGPASSWORD: discourse
       RAILS_ENV: test
       DISCOURSE_DEV_DB: discourse_test
+      EMBER_VERSION: ${{ (matrix.updated_ember && '5') || '3' }}
 
     steps:
       - name: Set working directory owner
@@ -185,6 +187,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-yarn-
 
+      - name: Upgrade Ember
+        if: matrix.updated_ember == true
+        run: script/switch_ember_version 5
+
       - name: Yarn install
         run: yarn install
 
@@ -234,6 +240,8 @@ jobs:
         run: bin/ember-cli --build
 
       - name: Theme System Tests
+        id: system_spec
+        continue-on-error: ${{matrix.updated_ember}}
         if: matrix.build_type == 'system'
         run: bin/rspec --format documentation tmp/component/spec/system
         timeout-minutes: 10
@@ -252,9 +260,30 @@ jobs:
           git archive --format=tar.gz HEAD > ../../theme.tar.gz
 
       - name: Component QUnit
+        id: qunit
+        continue-on-error: ${{matrix.updated_ember}}
         if: matrix.build_type == 'frontend'
         run: |
           THEME_NAME=$(ruby -e 'require "json"; puts JSON.parse(File.read("tmp/component/about.json"))["name"]')
           THEME_ARCHIVE=theme.tar.gz bundle exec rake themes:install:archive
           UNICORN_TIMEOUT=120 bundle exec rake "themes:qunit[name,$THEME_NAME]"
         timeout-minutes: 10
+
+      - uses: LouisBrunner/checks-action@v1.6.1
+        name: Report optional check failure
+        if: |
+          matrix.updated_ember == true &&
+          (steps.qunit.outcome == 'failure' || steps.system_spec.outcome == 'failure')
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: ❌ optional ${{matrix.build_type}}_tests (ember 5) job failed
+          conclusion: neutral
+          output: >-
+            {
+            "summary": "
+            The `${{matrix.build_type}}_tests` job failed under Ember 5.
+            This is currently marked as a 'neutral' test run, but will soon become required.
+            See https://meta.discourse.org/t/287211 for upgrade information.
+            Check the original GitHub run for logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            "
+            }
