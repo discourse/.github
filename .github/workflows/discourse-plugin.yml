@@ -320,6 +320,15 @@ jobs:
         run: exit 1
         continue-on-error: true
         timeout-minutes: 10
+    
+      - uses: LouisBrunner/checks-action@v1.6.1
+        if: matrix.build_type == 'frontend' && matrix.updated_ember == true
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          name: Testing status check reporter
+          conclusion: action_required
+          output: |
+            {"summary":"Hello world"}
 
       - name: Ember Build for System Tests
         if: matrix.build_type == 'system'
