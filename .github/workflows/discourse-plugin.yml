@@ -162,169 +162,174 @@ jobs:
           fetch-depth: 1
           ref: ${{ inputs.core_ref }}
 
-      # - name: Install plugin
-      #   uses: actions/checkout@v4
-      #   with:
-      #     repository: ${{ inputs.repository }}
-      #     path: plugins/${{ env.PLUGIN_NAME }}
-      #     fetch-depth: 1
+      - name: Install plugin
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.repository }}
+          path: plugins/${{ env.PLUGIN_NAME }}
+          fetch-depth: 1
 
-      # - name: Setup Git
-      #   run: |
-      #     git config --global user.email "ci@ci.invalid"
-      #     git config --global user.name "Discourse CI"
+      - name: Setup Git
+        run: |
+          git config --global user.email "ci@ci.invalid"
+          git config --global user.name "Discourse CI"
 
-      # - name: Clone additional plugins
-      #   uses: discourse/.github/actions/clone-additional-plugins@v1
-      #   with:
-      #     ssh_private_key: ${{ secrets.ssh_private_key }}
-      #     about_json_path: plugins/${{ env.PLUGIN_NAME }}/about.json
+      - name: Clone additional plugins
+        uses: discourse/.github/actions/clone-additional-plugins@v1
+        with:
+          ssh_private_key: ${{ secrets.ssh_private_key }}
+          about_json_path: plugins/${{ env.PLUGIN_NAME }}/about.json
 
-      # - name: Start redis
-      #   run: |
-      #     redis-server /etc/redis/redis.conf &
+      - name: Start redis
+        run: |
+          redis-server /etc/redis/redis.conf &
 
-      # - name: Start Postgres
-      #   run: |
-      #     chown -R postgres /var/run/postgresql
-      #     sudo -E -u postgres script/start_test_db.rb
-      #     sudo -u postgres psql -c "CREATE ROLE $PGUSER LOGIN SUPERUSER PASSWORD '$PGPASSWORD';"
+      - name: Start Postgres
+        run: |
+          chown -R postgres /var/run/postgresql
+          sudo -E -u postgres script/start_test_db.rb
+          sudo -u postgres psql -c "CREATE ROLE $PGUSER LOGIN SUPERUSER PASSWORD '$PGPASSWORD';"
 
-      # - name: Bundler cache
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: vendor/bundle
-      #     key: ${{ runner.os }}-gem-${{ hashFiles('**/Gemfile.lock') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-gem-
+      - name: Bundler cache
+        uses: actions/cache@v3
+        with:
+          path: vendor/bundle
+          key: ${{ runner.os }}-gem-${{ hashFiles('**/Gemfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-gem-
 
-      # - name: Setup gems
-      #   run: |
-      #     gem install bundler --conservative -v $(awk '/BUNDLED WITH/ { getline; gsub(/ /,""); print $0 }' Gemfile.lock)
-      #     bundle config --local path vendor/bundle
-      #     bundle config --local deployment true
-      #     bundle config --local without development
-      #     bundle install --jobs 4
-      #     bundle clean
+      - name: Setup gems
+        run: |
+          gem install bundler --conservative -v $(awk '/BUNDLED WITH/ { getline; gsub(/ /,""); print $0 }' Gemfile.lock)
+          bundle config --local path vendor/bundle
+          bundle config --local deployment true
+          bundle config --local without development
+          bundle install --jobs 4
+          bundle clean
 
-      # - name: Lint English locale
-      #   if: matrix.build_type == 'backend'
-      #   run: bundle exec ruby script/i18n_lint.rb "plugins/${{ env.PLUGIN_NAME }}/locales/{client,server}.en.yml"
+      - name: Lint English locale
+        if: matrix.build_type == 'backend'
+        run: bundle exec ruby script/i18n_lint.rb "plugins/${{ env.PLUGIN_NAME }}/locales/{client,server}.en.yml"
 
-      # - name: Get yarn cache directory
-      #   id: yarn-cache-dir
-      #   run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+      - name: Get yarn cache directory
+        id: yarn-cache-dir
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
-      # - name: Yarn cache
-      #   uses: actions/cache@v3
-      #   id: yarn-cache
-      #   with:
-      #     path: ${{ steps.yarn-cache-dir.outputs.dir }}
-      #     key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-yarn-
+      - name: Yarn cache
+        uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
 
-      # - name: Upgrade Ember
-      #   if: matrix.updated_ember == true
-      #   run: script/switch_ember_version 5
+      - name: Upgrade Ember
+        if: matrix.updated_ember == true
+        run: script/switch_ember_version 5
 
-      # - name: Yarn install
-      #   run: yarn install
+      - name: Yarn install
+        run: yarn install
 
-      # - name: Fetch app state cache
-      #   uses: actions/cache@v3
-      #   id: app-cache
-      #   with:
-      #     path: tmp/app-cache
-      #     key: >-
-      #       ${{ hashFiles('.github/workflows/tests.yml') }}-
-      #       ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
+      - name: Fetch app state cache
+        uses: actions/cache@v3
+        id: app-cache
+        with:
+          path: tmp/app-cache
+          key: >-
+            ${{ hashFiles('.github/workflows/tests.yml') }}-
+            ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
 
-      # - name: Restore database from cache
-      #   if: steps.app-cache.outputs.cache-hit == 'true'
-      #   run: |
-      #     if test -f script/silence_successful_output; then
-      #       script/silence_successful_output psql -f tmp/app-cache/cache.sql postgres
-      #     else
-      #       psql -f tmp/app-cache/cache.sql postgres
-      #     fi
+      - name: Restore database from cache
+        if: steps.app-cache.outputs.cache-hit == 'true'
+        run: |
+          if test -f script/silence_successful_output; then
+            script/silence_successful_output psql -f tmp/app-cache/cache.sql postgres
+          else
+            psql -f tmp/app-cache/cache.sql postgres
+          fi
 
-      # - name: Restore uploads from cache
-      #   if: steps.app-cache.outputs.cache-hit == 'true'
-      #   run: rm -rf public/uploads && cp -r tmp/app-cache/uploads public/uploads
+      - name: Restore uploads from cache
+        if: steps.app-cache.outputs.cache-hit == 'true'
+        run: rm -rf public/uploads && cp -r tmp/app-cache/uploads public/uploads
 
-      # - name: Create and migrate database
-      #   if: steps.app-cache.outputs.cache-hit != 'true'
-      #   run: |
-      #     bin/rake db:create
-      #     if test -f script/silence_successful_output; then
-      #       script/silence_successful_output bin/rake db:migrate
-      #     else
-      #       bin/rake db:migrate
-      #     fi
+      - name: Create and migrate database
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        run: |
+          bin/rake db:create
+          if test -f script/silence_successful_output; then
+            script/silence_successful_output bin/rake db:migrate
+          else
+            bin/rake db:migrate
+          fi
 
-      # - name: Dump database for cache
-      #   if: steps.app-cache.outputs.cache-hit != 'true'
-      #   run: mkdir -p tmp/app-cache && pg_dumpall > tmp/app-cache/cache.sql
+      - name: Dump database for cache
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        run: mkdir -p tmp/app-cache && pg_dumpall > tmp/app-cache/cache.sql
 
-      # - name: Dump uploads for cache
-      #   if: steps.app-cache.outputs.cache-hit != 'true'
-      #   run: rm -rf tmp/app-cache/uploads && cp -r public/uploads tmp/app-cache/uploads
+      - name: Dump uploads for cache
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        run: rm -rf tmp/app-cache/uploads && cp -r public/uploads tmp/app-cache/uploads
 
-      # - name: Check Zeitwerk eager_load
-      #   if: matrix.build_type == 'backend'
-      #   env:
-      #     LOAD_PLUGINS: 1
-      #   run: |
-      #     if ! bin/rails zeitwerk:check --trace; then
-      #       echo
-      #       echo "---------------------------------------------"
-      #       echo
-      #       echo "::error::'bin/rails zeitwerk:check' failed - the app will fail to boot with 'eager_load=true' (e.g. in production)."
-      #       echo "To reproduce locally, run 'bin/rails zeitwerk:check'."
-      #       echo "Alternatively, you can run your local server/tests with the 'DISCOURSE_ZEITWERK_EAGER_LOAD=1' environment variable."
-      #       echo
-      #       exit 1
-      #     fi
+      - name: Check Zeitwerk eager_load
+        if: matrix.build_type == 'backend'
+        env:
+          LOAD_PLUGINS: 1
+        run: |
+          if ! bin/rails zeitwerk:check --trace; then
+            echo
+            echo "---------------------------------------------"
+            echo
+            echo "::error::'bin/rails zeitwerk:check' failed - the app will fail to boot with 'eager_load=true' (e.g. in production)."
+            echo "To reproduce locally, run 'bin/rails zeitwerk:check'."
+            echo "Alternatively, you can run your local server/tests with the 'DISCOURSE_ZEITWERK_EAGER_LOAD=1' environment variable."
+            echo
+            exit 1
+          fi
 
-      # - name: Check Zeitwerk reloading
-      #   if: matrix.build_type == 'backend'
-      #   env:
-      #     LOAD_PLUGINS: 1
-      #   run: |
-      #     if ! bin/rails runner 'Rails.application.reloader.reload!'; then
-      #       echo
-      #       echo "---------------------------------------------"
-      #       echo
-      #       echo "::error::Zeitwerk reload failed - the app will not be able to reload properly in development."
-      #       echo "To reproduce locally, run \`bin/rails runner 'Rails.application.reloader.reload!'\`."
-      #       echo
-      #       exit 1
-      #     fi
+      - name: Check Zeitwerk reloading
+        if: matrix.build_type == 'backend'
+        env:
+          LOAD_PLUGINS: 1
+        run: |
+          if ! bin/rails runner 'Rails.application.reloader.reload!'; then
+            echo
+            echo "---------------------------------------------"
+            echo
+            echo "::error::Zeitwerk reload failed - the app will not be able to reload properly in development."
+            echo "To reproduce locally, run \`bin/rails runner 'Rails.application.reloader.reload!'\`."
+            echo
+            exit 1
+          fi
 
-      # - name: Plugin RSpec
-      #   if: matrix.build_type == 'backend'
-      #   run: bin/rake plugin:spec[${{ env.PLUGIN_NAME }}]
+      - name: Plugin RSpec
+        if: matrix.build_type == 'backend'
+        run: bin/rake plugin:spec[${{ env.PLUGIN_NAME }}]
 
-      # - name: Plugin QUnit
-      #   if: matrix.build_type == 'frontend'
-      #   run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
-      #   timeout-minutes: 10
-
-      - name: Simulate system failure
-        id: system_spec
-        if: matrix.build_type == 'system' && matrix.updated_ember == true
-        run: exit 1
-        continue-on-error: true
-        timeout-minutes: 10
-
-      - name: Simulate failure
+      - name: Plugin QUnit
+        if: matrix.build_type == 'frontend'
         id: qunit
-        if: matrix.build_type == 'frontend' && matrix.updated_ember == true
-        run: exit 1
-        continue-on-error: true
+        continue-on-error: matrix.updated_ember == true
+        run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
         timeout-minutes: 10
-    
+
+      - name: Ember Build for System Tests
+        if: matrix.build_type == 'system'
+        run: bin/ember-cli --build
+
+      - name: Plugin System Tests
+        id: system_spec
+        if: matrix.build_type == 'system'
+        continue-on-error: matrix.updated_ember == true
+        run: LOAD_PLUGINS=1 bin/system_rspec plugins/${{ env.PLUGIN_NAME }}/spec/system
+
+      - name: Upload failed system test screenshots
+        uses: actions/upload-artifact@v3
+        if: matrix.build_type == 'system' && failure()
+        with:
+          name: failed-system-test-screenshots
+          path: tmp/capybara/*.png
+
       - uses: LouisBrunner/checks-action@v1.6.1
         name: Report optional check failure
         if: |
@@ -345,17 +350,3 @@ jobs:
             "
             }
 
-      - name: Ember Build for System Tests
-        if: matrix.build_type == 'system'
-        run: bin/ember-cli --build
-
-      - name: Plugin System Tests
-        if: matrix.build_type == 'system'
-        run: LOAD_PLUGINS=1 bin/system_rspec plugins/${{ env.PLUGIN_NAME }}/spec/system
-
-      - name: Upload failed system test screenshots
-        uses: actions/upload-artifact@v3
-        if: matrix.build_type == 'system' && failure()
-        with:
-          name: failed-system-test-screenshots
-          path: tmp/capybara/*.png
