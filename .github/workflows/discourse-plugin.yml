@@ -328,7 +328,7 @@ jobs:
           name: Testing status check reporter
           conclusion: neutral
           output: |
-            {"summary":"Hello world"}
+            {"title": "⚠️ Ember 5 Tests Failed", "summary":"Hello world"}
 
       - name: Ember Build for System Tests
         if: matrix.build_type == 'system'
