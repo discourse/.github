@@ -146,6 +146,10 @@ jobs:
 
       matrix:
         build_type: ${{ fromJSON(needs.check_for_tests.outputs.matrix) }}
+        updated_ember: [false, true]
+        exclude:
+          - build_type: backend
+            updated_ember: true
 
     steps:
       - name: Set working directory owner
@@ -218,6 +222,10 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
+
+      - name: Upgrade Ember
+        if: matrix.updated_ember == true
+        run: script/switch_ember_version 5
 
       - name: Yarn install
         run: yarn install
