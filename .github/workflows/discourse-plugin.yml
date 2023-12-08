@@ -330,7 +330,7 @@ jobs:
         if: |
           matrix.updated_ember == true &&
           (matrix.build_type == 'frontend' || matrix.build_type == 'system') &&
-          (steps.qunit.outcome == 'failure' || (steps.system_spec.outcome == 'failure')
+          (steps.qunit.outcome == 'failure' || steps.system_spec.outcome == 'failure')
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           name: ❌ optional ${matrix.build_type} (ember 5) job failed
