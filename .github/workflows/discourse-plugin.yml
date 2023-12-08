@@ -341,7 +341,7 @@ jobs:
             The `${{matrix.build_type}}_tests` job failed under Ember 5.
             This is currently marked as a 'neutral' test run, but will soon become required.
             See https://meta.discourse.org/t/287211 for upgrade information.
-            Check the original GitHub run for logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/job/${{ github.job_id }}
+            Check the original GitHub run for logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             "
             }
 
