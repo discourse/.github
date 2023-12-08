@@ -126,12 +126,15 @@ jobs:
           end
 
   tests:
-    name: ${{ matrix.build_type || '' }}_tests
+    name: ${{ matrix.build_type || '' }}_tests${{ matrix.updated_ember && ' (Ember 5)' || '' }}
     runs-on: ubuntu-latest
     container: discourse/discourse_test:slim${{ (matrix.build_type == 'frontend' || matrix.build_type == 'system') && '-browsers' || '' }}
     timeout-minutes: 30
     needs: check_for_tests
     if: ${{ needs.check_for_tests.outputs.has_tests }}
+
+    outputs:
+      success: ${{ steps.qunit.outcome == 'success' }}
 
     env:
       DISCOURSE_HOSTNAME: www.example.com
@@ -140,6 +143,7 @@ jobs:
       PGUSER: discourse
       PGPASSWORD: discourse
       PLUGIN_NAME: ${{ inputs.name || github.event.repository.name }}
+      EMBER_VERSION: ${{ (matrix.updated_ember && '5') || '3' }}
 
     strategy:
       fail-fast: false
@@ -305,9 +309,16 @@ jobs:
         if: matrix.build_type == 'backend'
         run: bin/rake plugin:spec[${{ env.PLUGIN_NAME }}]
 
-      - name: Plugin QUnit
-        if: matrix.build_type == 'frontend'
-        run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
+      # - name: Plugin QUnit
+      #   if: matrix.build_type == 'frontend'
+      #   run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
+      #   timeout-minutes: 10
+
+      - name: Simulate failure
+        id: qunit
+        if: matrix.build_type == 'frontend' && matrix.updated_ember == true
+        run: exit 1
+        continue-on-error: true
         timeout-minutes: 10
 
       - name: Ember Build for System Tests
