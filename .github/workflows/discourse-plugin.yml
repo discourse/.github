@@ -309,7 +309,7 @@ jobs:
       - name: Plugin QUnit
         if: matrix.build_type == 'frontend'
         id: qunit
-        continue-on-error: matrix.updated_ember == true
+        continue-on-error: ${{matrix.updated_ember}}
         run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
         timeout-minutes: 10
 
@@ -320,7 +320,7 @@ jobs:
       - name: Plugin System Tests
         id: system_spec
         if: matrix.build_type == 'system'
-        continue-on-error: matrix.updated_ember == true
+        continue-on-error: ${{matrix.updated_ember}}
         run: LOAD_PLUGINS=1 bin/system_rspec plugins/${{ env.PLUGIN_NAME }}/spec/system
 
       - name: Upload failed system test screenshots
