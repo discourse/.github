@@ -126,15 +126,12 @@ jobs:
           end
 
   tests:
-    name: ${{ matrix.build_type || '' }}_tests${{ matrix.updated_ember && ' (Ember 5)' || '' }}
+    name: ${{ matrix.build_type || '' }}_tests${{ matrix.updated_ember && ' (optional Ember 5)' || '' }}
     runs-on: ubuntu-latest
     container: discourse/discourse_test:slim${{ (matrix.build_type == 'frontend' || matrix.build_type == 'system') && '-browsers' || '' }}
     timeout-minutes: 30
     needs: check_for_tests
     if: ${{ needs.check_for_tests.outputs.has_tests }}
-
-    outputs:
-      success: ${{ steps.qunit.outcome == 'success' }}
 
     env:
       DISCOURSE_HOSTNAME: www.example.com
@@ -314,6 +311,13 @@ jobs:
       #   run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
       #   timeout-minutes: 10
 
+      - name: Simulate system failure
+        id: system_spec
+        if: matrix.build_type == 'system' && matrix.updated_ember == true
+        run: exit 1
+        continue-on-error: true
+        timeout-minutes: 10
+
       - name: Simulate failure
         id: qunit
         if: matrix.build_type == 'frontend' && matrix.updated_ember == true
@@ -322,13 +326,20 @@ jobs:
         timeout-minutes: 10
     
       - uses: LouisBrunner/checks-action@v1.6.1
-        if: matrix.build_type == 'frontend' && matrix.updated_ember == true
+        name: Report optional check failure
+        if: |
+          matrix.updated_ember == true &&
+          (matrix.build_type == 'frontend' || matrix.build_type == 'system') &&
+          (steps.qunit.outcome == 'failure' || (steps.system_spec.outcome == 'failure')
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: ❌ Ember 5 Tests Failed
+          name: ❌ optional ${matrix.build_type} (ember 5) job failed
           conclusion: neutral
           output: |
-            {"summary":"Hello world"}
+            {
+              "summary":"The ${matrix.build_type} job failed under Ember 5. See https://meta.discourse.org/t/287211",
+              "details_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            }
 
       - name: Ember Build for System Tests
         if: matrix.build_type == 'system'
