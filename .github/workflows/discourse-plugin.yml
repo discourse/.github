@@ -325,10 +325,10 @@ jobs:
         if: matrix.build_type == 'frontend' && matrix.updated_ember == true
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: Testing status check reporter
+          name: ❌ Ember 5 Tests Failed
           conclusion: neutral
           output: |
-            {"title": "⚠️ Ember 5 Tests Failed", "summary":"Hello world"}
+            {"summary":"Hello world"}
 
       - name: Ember Build for System Tests
         if: matrix.build_type == 'system'
