@@ -310,7 +310,7 @@ jobs:
         if: matrix.build_type == 'frontend'
         id: qunit
         continue-on-error: ${{matrix.updated_ember}}
-        run: exit 1
+        run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
         timeout-minutes: 10
 
       - name: Ember Build for System Tests
@@ -321,7 +321,7 @@ jobs:
         id: system_spec
         if: matrix.build_type == 'system'
         continue-on-error: ${{matrix.updated_ember}}
-        run: exit 1
+        run: LOAD_PLUGINS=1 bin/system_rspec plugins/${{ env.PLUGIN_NAME }}/spec/system
 
       - name: Upload failed system test screenshots
         uses: actions/upload-artifact@v3

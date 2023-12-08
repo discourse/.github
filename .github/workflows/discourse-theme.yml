@@ -243,7 +243,7 @@ jobs:
         id: system_spec
         continue-on-error: ${{matrix.updated_ember}}
         if: matrix.build_type == 'system'
-        run: bin/rspec --format documentation tmp/component/spec/system
+        run: exit 1
         timeout-minutes: 10
 
       - name: Upload failed system test screenshots
@@ -264,9 +264,7 @@ jobs:
         continue-on-error: ${{matrix.updated_ember}}
         if: matrix.build_type == 'frontend'
         run: |
-          THEME_NAME=$(ruby -e 'require "json"; puts JSON.parse(File.read("tmp/component/about.json"))["name"]')
-          THEME_ARCHIVE=theme.tar.gz bundle exec rake themes:install:archive
-          UNICORN_TIMEOUT=120 bundle exec rake "themes:qunit[name,$THEME_NAME]"
+          exit 1
         timeout-minutes: 10
 
       - uses: LouisBrunner/checks-action@v1.6.1
