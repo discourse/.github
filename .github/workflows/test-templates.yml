@@ -21,3 +21,4 @@ jobs:
     with:
       repository: "discourse/discourse-assign"
       name: "discourse-assign"
+      core_ref: stable
