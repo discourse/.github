@@ -333,12 +333,16 @@ jobs:
           (steps.qunit.outcome == 'failure' || steps.system_spec.outcome == 'failure')
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: ❌ optional ${{matrix.build_type}} (ember 5) job failed
+          name: ❌ optional ${{matrix.build_type}}_tests (ember 5) job failed
           conclusion: neutral
-          output: |
+          output: >-
             {
-              "summary":"The ${{matrix.build_type}} job failed under Ember 5. See https://meta.discourse.org/t/287211",
-              "details_url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            "summary": "
+              The ${{matrix.build_type}} job failed under Ember 5.
+              This is currently marked as a 'neutral' test run, but will soon become required.
+              See https://meta.discourse.org/t/287211 for upgrade information.
+              Check the original GitHub run for logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            ",
             }
 
       - name: Ember Build for System Tests
