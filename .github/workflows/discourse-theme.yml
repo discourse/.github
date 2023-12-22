@@ -6,6 +6,9 @@ on:
       repository:
         type: string
         required: false
+      core_ref:
+        type: string
+        required: false
     secrets:
       ssh_private_key:
         description: "Optional SSH private key to be used when cloning additional plugin repos"
@@ -106,7 +109,7 @@ jobs:
 
       matrix:
         build_type: ${{ fromJSON(needs.check_for_tests.outputs.matrix) }}
-        updated_ember: [false, true]
+        updated_ember: ${{ inputs.core_ref && fromJSON('[false]') || fromJSON('[false, true]') }}
 
     env:
       DISCOURSE_HOSTNAME: www.example.com
@@ -125,6 +128,7 @@ jobs:
         with:
           repository: discourse/discourse
           fetch-depth: 1
+          ref: ${{ inputs.core_ref }}
 
       - name: Install component
         uses: actions/checkout@v4
