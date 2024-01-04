@@ -321,7 +321,10 @@ jobs:
         id: system_spec
         if: matrix.build_type == 'system'
         continue-on-error: ${{matrix.updated_ember}}
-        run: LOAD_PLUGINS=1 bin/system_rspec plugins/${{ env.PLUGIN_NAME }}/spec/system
+        env:
+          LOAD_PLUGINS: 1
+          CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
+        run: bin/system_rspec plugins/${{ env.PLUGIN_NAME }}/spec/system
 
       - name: Upload failed system test screenshots
         uses: actions/upload-artifact@v3

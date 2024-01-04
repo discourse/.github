@@ -247,6 +247,8 @@ jobs:
         id: system_spec
         continue-on-error: ${{matrix.updated_ember}}
         if: matrix.build_type == 'system'
+        env:
+          CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
         run: bin/rspec --format documentation tmp/component/spec/system
         timeout-minutes: 10
 
