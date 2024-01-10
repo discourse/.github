@@ -126,7 +126,7 @@ jobs:
           end
 
   tests:
-    name: ${{ matrix.build_type || '' }}_tests${{ matrix.updated_ember && ' (optional Ember 5)' || '' }}
+    name: ${{ matrix.build_type || '' }}_tests
     runs-on: ubuntu-latest
     container: discourse/discourse_test:slim${{ (matrix.build_type == 'frontend' || matrix.build_type == 'system') && '-browsers' || '' }}
     timeout-minutes: 30
@@ -140,17 +140,12 @@ jobs:
       PGUSER: discourse
       PGPASSWORD: discourse
       PLUGIN_NAME: ${{ inputs.name || github.event.repository.name }}
-      EMBER_VERSION: ${{ (matrix.updated_ember && '5') || '3' }}
 
     strategy:
       fail-fast: false
 
       matrix:
         build_type: ${{ fromJSON(needs.check_for_tests.outputs.matrix) }}
-        updated_ember: ${{ inputs.core_ref && fromJSON('[false]') || fromJSON('[false, true]') }}
-        exclude:
-          - build_type: backend
-            updated_ember: true
 
     steps:
       - name: Set working directory owner
@@ -223,10 +218,6 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
-
-      - name: Upgrade Ember
-        if: matrix.updated_ember == true
-        run: script/switch_ember_version 5
 
       - name: Yarn install
         run: yarn install
@@ -308,8 +299,6 @@ jobs:
 
       - name: Plugin QUnit
         if: matrix.build_type == 'frontend'
-        id: qunit
-        continue-on-error: ${{matrix.updated_ember}}
         run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
         timeout-minutes: 10
 
@@ -318,7 +307,6 @@ jobs:
         run: bin/ember-cli --build
 
       - name: Plugin System Tests
-        id: system_spec
         if: matrix.build_type == 'system'
         continue-on-error: ${{matrix.updated_ember}}
         env:
@@ -332,24 +320,3 @@ jobs:
         with:
           name: failed-system-test-screenshots
           path: tmp/capybara/*.png
-
-      - uses: LouisBrunner/checks-action@v1.6.1
-        name: Report optional check failure
-        if: |
-          matrix.updated_ember == true &&
-          (matrix.build_type == 'frontend' || matrix.build_type == 'system') &&
-          (steps.qunit.outcome == 'failure' || steps.system_spec.outcome == 'failure')
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          name: ❌ optional ${{matrix.build_type}}_tests (ember 5) job failed
-          conclusion: neutral
-          output: >-
-            {
-            "summary": "
-            The `${{matrix.build_type}}_tests` job failed under Ember 5.
-            This is currently marked as a 'neutral' test run, but will soon become required.
-            See https://meta.discourse.org/t/287211 for upgrade information.
-            Check the original GitHub run for logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-            "
-            }
-
