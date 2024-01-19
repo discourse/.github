@@ -308,7 +308,6 @@ jobs:
 
       - name: Plugin System Tests
         if: matrix.build_type == 'system'
-        continue-on-error: ${{matrix.updated_ember}}
         env:
           LOAD_PLUGINS: 1
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
