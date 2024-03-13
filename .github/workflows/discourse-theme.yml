@@ -241,7 +241,7 @@ jobs:
         run: rm -rf tmp/app-cache/uploads && cp -r public/uploads tmp/app-cache/uploads
 
       - name: Validate discourse-compatibility
-        if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_compatibility_file && !inputs.core_ref
+        if: matrix.build_type == 'system' && needs.check_for_tests.outputs.has_compatibility_file && !inputs.core_ref
         run: bin/rake "compatibility:validate[tmp/component/.discourse-compatibility]"
 
       - name: Ember Build for System Tests
