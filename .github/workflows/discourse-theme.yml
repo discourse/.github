@@ -67,6 +67,8 @@ jobs:
     outputs:
       matrix: ${{ steps.check_tests.outputs.matrix }}
       has_tests: ${{ steps.check_tests.outputs.has_tests }}
+      has_compatibility_file: ${{ steps.check_tests.outputs.has_compatibility_file }}
+      has_specs: ${{ steps.check_tests.outputs.has_specs }}
 
     steps:
       - name: Install component
@@ -83,14 +85,19 @@ jobs:
         run: |
           require 'json'
 
+          has_specs = Dir.glob("spec/system/**/*.rb").any?
+          has_compatibility_file = File.exist?(".discourse-compatibility")
+
           matrix = []
 
           matrix << 'frontend' if Dir.glob("test/**/*.{js,es6,gjs}").any?
-          matrix << 'system' if Dir.glob("spec/system/**/*.rb").any?
+          matrix << 'system' if has_specs || has_compatibility_file
 
-          puts "Detected test types: #{matrix.inspect}"
+          puts "Running jobs: #{matrix.inspect}"
 
           File.write(ENV["GITHUB_OUTPUT"], "matrix=#{matrix.to_json}\n", mode: 'a+')
+          File.write(ENV["GITHUB_OUTPUT"], "has_specs=true\n", mode: 'a+') if has_specs
+          File.write(ENV["GITHUB_OUTPUT"], "has_compatibility_file=true\n", mode: 'a+') if has_compatibility_file
 
           if matrix.any?
             File.write(ENV["GITHUB_OUTPUT"], "has_tests=true\n", mode: 'a+')
@@ -233,12 +240,16 @@ jobs:
         if: steps.app-cache.outputs.cache-hit != 'true'
         run: rm -rf tmp/app-cache/uploads && cp -r public/uploads tmp/app-cache/uploads
 
+      - name: Validate discourse-compatibility
+        if: matrix.build_type == 'system' && needs.check_for_tests.outputs.has_compatibility_file && !inputs.core_ref
+        run: bin/rake "compatibility:validate[tmp/component/.discourse-compatibility]"
+
       - name: Ember Build for System Tests
-        if: matrix.build_type == 'system'
+        if: matrix.build_type == 'system' && needs.check_for_tests.outputs.has_specs
         run: bin/ember-cli --build
 
       - name: Theme System Tests
-        if: matrix.build_type == 'system'
+        if: matrix.build_type == 'system' && needs.check_for_tests.outputs.has_specs
         env:
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
         run: bin/rspec --format documentation tmp/component/spec/system
