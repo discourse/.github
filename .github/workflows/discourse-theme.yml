@@ -180,6 +180,12 @@ jobs:
           bundle install --jobs 4
           bundle clean
 
+      # We are in the midst of replacing Chrome for Chromium in our base image since it doesn't ship a binary for arm64 on
+      # linux. This can be removed in the future when the base image no longer installs Chrome.
+      - name: Remove Chrome
+        continue-on-error: true
+        run: apt remove -y google-chrome-stable
+
       - name: Lint English locale
         run: bundle exec ruby script/i18n_lint.rb "tmp/component/locales/en.yml"
 
