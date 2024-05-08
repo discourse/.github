@@ -127,6 +127,7 @@ jobs:
       PGPASSWORD: discourse
       RAILS_ENV: test
       DISCOURSE_DEV_DB: discourse_test
+      CHEAP_SOURCE_MAPS: "1"
 
     steps:
       - name: Set working directory owner
