@@ -99,7 +99,7 @@ jobs:
 
           File.write(ENV["GITHUB_OUTPUT"], "matrix=#{matrix.to_json}\n", mode: 'a+')
           File.write(ENV["GITHUB_OUTPUT"], "has_specs=true\n", mode: 'a+') if has_specs
-          File.write(ENV["GITHUB_OUTPUT"], "has_system_specs=true\n", mode: 'a+') if has_specs
+          File.write(ENV["GITHUB_OUTPUT"], "has_system_specs=true\n", mode: 'a+') if has_system_specs
           File.write(ENV["GITHUB_OUTPUT"], "has_compatibility_file=true\n", mode: 'a+') if has_compatibility_file
 
           if matrix.any?
@@ -265,7 +265,7 @@ jobs:
         run: bin/ember-cli --build
 
       - name: Theme RSpec Tests
-        if: matrix.build_type == 'rspec'
+        if: matrix.build_type == 'rspec' && needs.check_for_tests.outputs.has_specs
         env:
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
         run: bin/rspec --format documentation tmp/component/spec
