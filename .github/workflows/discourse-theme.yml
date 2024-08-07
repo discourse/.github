@@ -89,11 +89,12 @@ jobs:
           has_system_specs = Dir.glob("spec/system/**/*.rb").any?
           has_specs = Dir.glob("spec/**/*.rb").any?
           has_compatibility_file = File.exist?(".discourse-compatibility")
+          has_locale_files = File.exist?("locales/en.yml")
 
           matrix = []
 
           matrix << 'frontend' if Dir.glob("test/**/*.{js,es6,gjs}").any?
-          matrix << 'rspec' if has_specs || has_compatibility_file
+          matrix << 'rspec' if has_specs || has_compatibility_file || has_locale_files
 
           puts "Running jobs: #{matrix.inspect}"
 
