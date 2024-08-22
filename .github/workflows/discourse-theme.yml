@@ -288,6 +288,10 @@ jobs:
 
       - name: Component QUnit
         if: matrix.build_type == 'frontend'
+        env:
+          # Cloning components via git in the test env will fail because FinalDestination will return a fake IP
+          # If we need this functionality in future, we'll need some refactoring in core.
+          UPDATE_COMPONENTS: 0
         run: |
           THEME_NAME=$(ruby -e 'require "json"; puts JSON.parse(File.read("tmp/component/about.json"))["name"]')
           THEME_ARCHIVE=theme.tar.gz bundle exec rake themes:install:archive
