@@ -12,7 +12,6 @@ on:
       core_ref:
         type: string
         required: false
-        default: pnpm
     secrets:
       ssh_private_key:
         description: "Optional SSH private key to be used when cloning additional plugin repos"
