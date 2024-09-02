@@ -201,6 +201,20 @@ jobs:
       - name: Lint English locale
         run: bundle exec ruby script/i18n_lint.rb "tmp/component/locales/en.yml"
 
+      - name: Get yarn cache directory
+        id: yarn-cache-dir
+        run: if [ -f yarn.lock ]; then echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT; fi
+
+      - name: Yarn cache
+        uses: actions/cache@v4
+        id: yarn-cache
+        if: ${{ steps.yarn-cache-dir.outputs.dir }}
+        with:
+          path: ${{ steps.yarn-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
       - name: Install JS dependencies
         run: $(test -f yarn.lock && echo yarn || echo pnpm) install
 
