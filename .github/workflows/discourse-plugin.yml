@@ -234,7 +234,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Install JS Dependencies
-        run: $(test -f yarn.lock && echo yarn || echo pnpm) install
+        run: if [ -f yarn.lock ]; then yarn install; else pnpm install; fi
 
       - name: Fetch app state cache
         uses: actions/cache@v4
