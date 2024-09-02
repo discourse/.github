@@ -221,19 +221,20 @@ jobs:
 
       - name: Get yarn cache directory
         id: yarn-cache-dir
-        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
+        run: if [ -f yarn.lock ]; then echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT; fi
 
       - name: Yarn cache
         uses: actions/cache@v4
         id: yarn-cache
+        if: ${{ steps.yarn-cache-dir.outputs.dir }}
         with:
           path: ${{ steps.yarn-cache-dir.outputs.dir }}
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
 
-      - name: Yarn install
-        run: yarn install
+      - name: Install JS Dependencies
+        run: if [ -f yarn.lock ]; then yarn install; else pnpm install; fi
 
       - name: Fetch app state cache
         uses: actions/cache@v4
