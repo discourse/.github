@@ -141,6 +141,7 @@ jobs:
       PGPASSWORD: discourse
       PLUGIN_NAME: ${{ inputs.name || github.event.repository.name }}
       CHEAP_SOURCE_MAPS: "1"
+      LOAD_PLUGINS: "1"
 
     strategy:
       fail-fast: false
