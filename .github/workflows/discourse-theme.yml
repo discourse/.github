@@ -129,7 +129,6 @@ jobs:
       RAILS_ENV: test
       DISCOURSE_DEV_DB: discourse_test
       CHEAP_SOURCE_MAPS: "1"
-      LOAD_PLUGINS: "1"
 
     steps:
       - name: Set working directory owner
@@ -266,6 +265,7 @@ jobs:
         if: matrix.build_type == 'rspec' && needs.check_for_tests.outputs.has_specs
         env:
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
+          LOAD_PLUGINS: 1
         run: bin/rspec --format documentation tmp/component/spec
         timeout-minutes: 10
 
