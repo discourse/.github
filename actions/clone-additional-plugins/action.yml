@@ -48,7 +48,8 @@ runs:
           keys = ENV['KEYS']
           return yield if keys.nil? || keys.length == 0
 
-          keys = keys.split("|")
+          keys = keys.split("|").filter {|k| k.length > 0 }
+          return yield if keys.length == 0
 
           keys.each_with_index do |key, index|
             system("ssh-add -D -q", exception: true)
