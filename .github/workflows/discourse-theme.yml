@@ -34,7 +34,7 @@ jobs:
           cache: yarn
 
       - name: Yarn install
-        run: yarn install
+        run: yarn install --frozen-lockfile
 
       - name: ESLint
         if: ${{ !cancelled() }}
@@ -210,7 +210,7 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Install JS dependencies
-        run: if [ -f yarn.lock ]; then yarn install; else pnpm install; fi
+        run: if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else pnpm install --frozen-lockfile; fi
 
       - name: Fetch app state cache
         uses: actions/cache@v4
