@@ -18,6 +18,9 @@ concurrency:
   group: discourse-theme-${{ format('{0}-{1}-{2}', github.head_ref || github.run_number, github.job, inputs.core_ref) }}
   cancel-in-progress: true
 
+env:
+  JS_PKG_MANAGER_NULL_VALUE: "none"
+
 jobs:
   linting:
     runs-on: ubuntu-latest
@@ -27,40 +30,60 @@ jobs:
         with:
           repository: ${{ inputs.repository }}
 
+      - name: Determine JS package manager
+        id: js-pkg-manager
+        run: |
+          if [ -f yarn.lock ]; then
+            echo "Using Yarn"
+            echo "manager=yarn" >> $GITHUB_OUTPUT
+          elif [ -f pnpm-lock.yaml ]; then
+            echo "Using pnpm"
+            echo "manager=pnpm" >> $GITHUB_OUTPUT
+          else
+            echo "No JS package manager detected"
+            echo "manager=${{ env.JS_PKG_MANAGER_NULL_VALUE }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install package manager
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
+        run: npm install -g ${{ steps.js-pkg-manager.outputs.manager }}
+
       - name: Set up Node.js
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
+          cache: ${{ steps.js-pkg-manager.outputs.manager }}
 
-      - name: Yarn install
-        run: yarn install --frozen-lockfile
+      - name: Install dependencies
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
+        run:  ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
 
       - name: ESLint
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
           if test -f .prettierrc.cjs; then
-            yarn eslint --ext .js,.gjs,.js.es6 --no-error-on-unmatched-pattern {test,javascripts}
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs,.js.es6 --no-error-on-unmatched-pattern {test,javascripts}
           else
-            yarn eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,javascripts}
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,javascripts}
           fi
 
       - name: Prettier
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         shell: bash
         run: |
-          yarn prettier --version
+          ${{ steps.js-pkg-manager.outputs.manager }} prettier --version
           files=$(find javascripts desktop mobile common scss -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.es6" \) 2> /dev/null) || true
           if [ -n "$files" ]; then
-            yarn prettier --check $files
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check $files
           fi
           if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' -or -name '*.es6' \) 2> /dev/null | wc -l)" ]; then
-            yarn prettier --check "test/**/*.{js,gjs,es6}"
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs,es6}"
           fi
 
       - name: Ember template lint
-        if: ${{ !cancelled() }}
-        run: yarn ember-template-lint --no-error-on-unmatched-pattern javascripts
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern javascripts
 
   check_for_tests:
     runs-on: ubuntu-latest

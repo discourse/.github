@@ -21,6 +21,9 @@ concurrency:
   group: discourse-plugin-${{ format('{0}-{1}-{2}', github.head_ref || github.run_number, github.job, inputs.core_ref) }}
   cancel-in-progress: true
 
+env:
+  JS_PKG_MANAGER_NULL_VALUE: "none"
+
 jobs:
   linting:
     runs-on: ubuntu-latest
@@ -30,14 +33,34 @@ jobs:
         with:
           repository: ${{ inputs.repository }}
 
+      - name: Determine JS package manager
+        id: js-pkg-manager
+        run: |
+          if [ -f yarn.lock ]; then
+            echo "Using Yarn"
+            echo "manager=yarn" >> $GITHUB_OUTPUT
+          elif [ -f pnpm-lock.yaml ]; then
+            echo "Using pnpm"
+            echo "manager=pnpm" >> $GITHUB_OUTPUT
+          else
+            echo "No JS package manager detected"
+            echo "manager=${{ env.JS_PKG_MANAGER_NULL_VALUE }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install package manager
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
+        run: npm install -g ${{ steps.js-pkg-manager.outputs.manager }}
+
       - name: Set up Node.js
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
+          cache: ${{ steps.js-pkg-manager.outputs.manager }}
 
-      - name: Yarn install
-        run: yarn install --frozen-lockfile
+      - name: Install JS dependencies
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
+        run:  ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
 
       - name: Set up ruby
         uses: ruby/setup-ruby@v1
@@ -46,37 +69,37 @@ jobs:
           bundler-cache: true
 
       - name: ESLint
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
           if test -f .prettierrc.cjs; then
-            yarn eslint --ext .js,.gjs,.js.es6 --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs,.js.es6 --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
           else
-            yarn eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
           fi
 
       - name: Prettier
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         shell: bash
         run: |
-          yarn prettier -v
+          ${{ steps.js-pkg-manager.outputs.manager }} prettier -v
           if [ -n "$(find assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.es6" -or -name "*.hbs" \) 2>/dev/null)" ]; then
-            yarn prettier --list-different "assets/**/*.{scss,js,gjs,es6,hbs}"
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --list-different "assets/**/*.{scss,js,gjs,es6,hbs}"
           fi
           if [ -n "$(find admin/assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.es6" -or -name "*.hbs" \) 2>/dev/null)" ]; then
-            yarn prettier --list-different "admin/assets/**/*.{scss,js,gjs,es6,hbs}"
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --list-different "admin/assets/**/*.{scss,js,gjs,es6,hbs}"
           fi
           if [ 0 -lt $(find test -type f \( -name "*.js" -or -name "*.gjs" -or -name "*.es6" \) 2> /dev/null | wc -l) ]; then
-            yarn prettier --list-different "test/**/*.{js,gjs,es6}"
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --list-different "test/**/*.{js,gjs,es6}"
           fi
 
       - name: Ember template lint
-        if: ${{ !cancelled() }}
-        run: yarn ember-template-lint --no-error-on-unmatched-pattern assets/javascripts
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern assets/javascripts
 
       # Separated due to https://github.com/ember-template-lint/ember-template-lint/issues/2758
       - name: Ember template lint (admin)
-        if: ${{ !cancelled() }}
-        run: yarn ember-template-lint --no-error-on-unmatched-pattern admin/assets/javascripts
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern admin/assets/javascripts
 
       - name: Rubocop
         if: ${{ !cancelled() }}
