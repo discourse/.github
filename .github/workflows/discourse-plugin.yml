@@ -21,6 +21,9 @@ concurrency:
   group: discourse-plugin-${{ format('{0}-{1}-{2}', github.head_ref || github.run_number, github.job, inputs.core_ref) }}
   cancel-in-progress: true
 
+env:
+  JS_PKG_MANAGER_NULL_VALUE: "none"
+
 jobs:
   linting:
     runs-on: ubuntu-latest
@@ -36,21 +39,27 @@ jobs:
           if [ -f yarn.lock ]; then
             echo "Using Yarn"
             echo "manager=yarn" >> $GITHUB_OUTPUT
-          else
+          elif [ -f pnpm-lock.yaml ]; then
             echo "Using pnpm"
             echo "manager=pnpm" >> $GITHUB_OUTPUT
+          else
+            echo "No JS package manager detected"
+            echo "manager=${{ env.JS_PKG_MANAGER_NULL_VALUE }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Install package manager
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
         run: npm install -g ${{ steps.js-pkg-manager.outputs.manager }}
 
       - name: Set up Node.js
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: ${{ steps.js-pkg-manager.outputs.manager }}
 
       - name: Install JS dependencies
+        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
         run:  ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
 
       - name: Set up ruby
@@ -60,7 +69,7 @@ jobs:
           bundler-cache: true
 
       - name: ESLint
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
           if test -f .prettierrc.cjs; then
             ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs,.js.es6 --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
@@ -69,7 +78,7 @@ jobs:
           fi
 
       - name: Prettier
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         shell: bash
         run: |
           ${{ steps.js-pkg-manager.outputs.manager }} prettier -v
@@ -84,12 +93,12 @@ jobs:
           fi
 
       - name: Ember template lint
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern assets/javascripts
 
       # Separated due to https://github.com/ember-template-lint/ember-template-lint/issues/2758
       - name: Ember template lint (admin)
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern admin/assets/javascripts
 
       - name: Rubocop
