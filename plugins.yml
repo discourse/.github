@@ -39,6 +39,7 @@ repositories:
   - "discourse-gradle-issue"
   - "discourse-graphviz"
   - "discourse-group-tracker"
+  - "discourse-hcaptcha"
   - "discourse-invite-tokens"
   - "discourse-jira"
   - "discourse-kolide"
