@@ -55,9 +55,15 @@ jobs:
           node-version: 20
           cache: ${{ steps.js-pkg-manager.outputs.manager }}
 
-      - name: Install dependencies
+      - name: Install JS dependencies
         if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
         run:  ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
+
+      - name: Set up ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.2"
+          bundler-cache: true
 
       - name: ESLint
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
@@ -84,6 +90,19 @@ jobs:
       - name: Ember template lint
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern javascripts
+
+      - name: Rubocop
+        if: ${{ !cancelled() }}
+        run: bundle exec rubocop .
+
+      - name: Syntax Tree
+        if: ${{ !cancelled() }}
+        run: |
+          if test -f .streerc; then
+            bundle exec stree check Gemfile $(git ls-files '*.rb') $(git ls-files '*.rake') $(git ls-files '*.thor')
+          else
+            echo "Stree config not detected for this repository. Skipping."
+          fi        
 
   check_for_tests:
     runs-on: ubuntu-latest
