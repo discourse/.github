@@ -60,7 +60,7 @@ jobs:
 
       - name: Install JS dependencies
         if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
-        run:  ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
+        run: ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
 
       - name: Set up ruby
         uses: ruby/setup-ruby@v1
@@ -141,6 +141,7 @@ jobs:
           matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,es6,gjs}").any?
           matrix << 'backend'
           matrix << 'system' if Dir.glob("spec/system/**/*.rb").any?
+          matrix << 'annotations' if Dir.glob("app/models/**/*.rb").any?
 
           puts "Running jobs: #{matrix.inspect}"
 
@@ -341,6 +342,25 @@ jobs:
       - name: Ember Build for System Tests
         if: matrix.build_type == 'system'
         run: bin/ember-cli --build
+
+      - name: Check Annotations
+        if: matrix.build_type == 'annotations'
+        run: |
+          bin/rake annotate:ensure_all_indexes
+          bin/annotate --models --model-dir plugins/${{ env.PLUGIN_NAME }}/app/models
+
+          cd plugins/${{ env.PLUGIN_NAME }}
+
+          if [ ! -z "$(git status --porcelain app/models/)" ]; then
+            echo "Annotations are not up to date. To resolve, run:"
+            echo "  rake annotate"
+            echo
+            echo "Or manually apply the diff printed below:"
+            echo "---------------------------------------------"
+            git -c color.ui=always diff app/models/
+            exit 1
+          fi
+        timeout-minutes: 5
 
       - name: Plugin System Tests
         if: matrix.build_type == 'system'
