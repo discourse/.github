@@ -349,7 +349,9 @@ jobs:
           bin/rake annotate:ensure_all_indexes
           bin/annotate --models --model-dir plugins/${{ env.PLUGIN_NAME }}/app/models
 
-          if [ ! -z "$(cd plugins/${{ env.PLUGIN_NAME }} && git status --porcelain app/models/)" ]; then
+          cd plugins/${{ env.PLUGIN_NAME }}
+
+          if [ ! -z "$(git status --porcelain app/models/)" ]; then
             echo "Annotations are not up to date. To resolve, run:"
             echo "  rake annotate"
             echo
