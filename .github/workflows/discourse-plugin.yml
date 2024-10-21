@@ -60,7 +60,7 @@ jobs:
 
       - name: Install JS dependencies
         if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
-        run:  ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
+        run: ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
 
       - name: Set up ruby
         uses: ruby/setup-ruby@v1
@@ -358,7 +358,7 @@ jobs:
             git -c color.ui=always diff app/models/
             exit 1
           fi
-        timeout-minutes: 30
+        timeout-minutes: 5
 
       - name: Plugin System Tests
         if: matrix.build_type == 'system'
