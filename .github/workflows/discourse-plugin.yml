@@ -350,8 +350,8 @@ jobs:
           bin/annotate --models --model-dir app/models
 
           if [ ! -z "$(git status --porcelain app/models/)" ]; then
-            echo "Core annotations are not up to date. To resolve, run:"
-            echo "  bin/rake annotate:clean"
+            echo "Annotations are not up to date. To resolve, run:"
+            echo "  rake annotate"
             echo
             echo "Or manually apply the diff printed below:"
             echo "---------------------------------------------"
