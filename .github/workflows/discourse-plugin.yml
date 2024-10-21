@@ -347,15 +347,15 @@ jobs:
         if: matrix.build_type == 'annotations'
         run: |
           bin/rake annotate:ensure_all_indexes
-          bin/rake annotate
+          bin/annotate --models --model-dir plugins/${{ env.PLUGIN_NAME }}/app/models
 
-          if [ ! -z "$(git status --porcelain app/models/)" ]; then
+          if [ ! -z "$(git status --porcelain plugins/${{ env.PLUGIN_NAME }}/app/models/)" ]; then
             echo "Annotations are not up to date. To resolve, run:"
             echo "  rake annotate"
             echo
             echo "Or manually apply the diff printed below:"
             echo "---------------------------------------------"
-            git -c color.ui=always diff app/models/
+            git -c color.ui=always diff plugins/${{ env.PLUGIN_NAME }}/app/models/
             exit 1
           fi
         timeout-minutes: 5
