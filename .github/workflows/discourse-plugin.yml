@@ -347,7 +347,7 @@ jobs:
         if: matrix.build_type == 'annotations'
         run: |
           bin/rake annotate:ensure_all_indexes
-          bin/annotate --models --model-dir app/models
+          bin/rake annotate
 
           if [ ! -z "$(git status --porcelain app/models/)" ]; then
             echo "Annotations are not up to date. To resolve, run:"
