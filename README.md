@@ -14,5 +14,4 @@ If your change is 'breaking' (e.g. introduces a new linting step), bump the inte
 
 ## Rolling out changes to templates
 
-Changes to `(plugin|theme)-workflow-templates` (i.e. major version bumps) can be rolled out to open-source official themes/plugins by visiting the
-[Update CI](https://github.com/discourse/.github/actions/workflows/update_ci.yml) action page and clicking "Run workflow". 
+Changes to `(plugin|theme)-workflow-templates` (i.e. major version bumps) can be rolled out to themes and plugins using [mass-pr](https://github.com/discourse/mass-pr).
