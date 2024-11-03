@@ -3,7 +3,7 @@ description: Installs any additional plugins listed in this plugin/theme's `abou
 
 inputs:
   ssh_private_key:
-    description: 'Optional SSH private key, if one or more of the repos is private'
+    description: "Optional SSH private key, if one or more of the repos is private"
     required: false
   about_json_path:
     description: Path to the about.json file
@@ -24,10 +24,10 @@ runs:
     - name: Install required plugins
       env:
         KEYS: ${{ inputs.ssh_private_key }}
-        GIT_SSH_COMMAND: 'ssh -o StrictHostKeyChecking=no'
+        GIT_SSH_COMMAND: "ssh -o StrictHostKeyChecking=no"
       run: |
-        require 'json'
-        require 'open3'
+        require "json"
+        require "open3"
 
         metadata_filename = "${{ inputs.about_json_path }}"
 
@@ -45,7 +45,7 @@ runs:
         end
 
         def try_each_key
-          keys = ENV['KEYS']
+          keys = ENV["KEYS"]
           return yield if keys.nil? || keys.length == 0
 
           keys = keys.split("|").filter {|k| k.length > 0 }
@@ -67,10 +67,22 @@ runs:
           end
         end
 
-        plugins.each do |plugin_url|
+        plugins.each do |plugin|
+          plugin_url, branch = nil
+          if plugin.is_a?(Hash)
+            plugin_url = plugin["url"]
+            branch = plugin["branch"]
+          else
+            plugin_url = plugin
+          end
+
           puts "Cloning #{plugin_url}..."
           try_each_key do
-            out, status = Open3.capture2e("git", "-C", "plugins", "clone", "--depth", "1", plugin_url)
+            args = ["-C", "plugins", "clone", "--depth", "1"]
+            args << "-b" << branch if branch
+            args << plugin_url
+
+            out, status = Open3.capture2e("git", *args)
             raise "Clone error \n#{out}" unless status.success?
 
             puts "Successfully cloned #{plugin_url}"
