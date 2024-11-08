@@ -65,13 +65,22 @@ jobs:
           ruby-version: "3.2"
           bundler-cache: true
 
+      - name: Check for .es6 files
+        if: ${{ !cancelled() }}
+        run: |
+          if find . -type f -name '*.js.es6' | grep -q "."; then
+            echo ".js.es6 files are no longer supported by this workflow. Rename them to '.js'"
+            exit 1
+          fi
+
       - name: ESLint
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
-          if test -f .prettierrc.cjs; then
-            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs,.js.es6 --no-error-on-unmatched-pattern {test,javascripts}
+          if test -f eslint.config.mjs; then
+            # modern flat config. No --ext needed
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --no-error-on-unmatched-pattern {test,javascripts}
           else
-            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.js.es6 --no-error-on-unmatched-pattern {test,javascripts}
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs --no-error-on-unmatched-pattern {test,javascripts}
           fi
 
       - name: Prettier
@@ -79,12 +88,12 @@ jobs:
         shell: bash
         run: |
           ${{ steps.js-pkg-manager.outputs.manager }} prettier --version
-          files=$(find javascripts desktop mobile common scss -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.es6" \) 2> /dev/null) || true
+          files=$(find javascripts desktop mobile common scss -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" \) 2> /dev/null) || true
           if [ -n "$files" ]; then
             ${{ steps.js-pkg-manager.outputs.manager }} prettier --check $files
           fi
-          if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' -or -name '*.es6' \) 2> /dev/null | wc -l)" ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs,es6}"
+          if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' \) 2> /dev/null | wc -l)" ]; then
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs}"
           fi
 
       - name: Ember template lint
@@ -140,7 +149,7 @@ jobs:
 
           matrix = []
 
-          matrix << 'frontend' if Dir.glob("test/**/*.{js,es6,gjs}").any?
+          matrix << 'frontend' if Dir.glob("test/**/*.{js,gjs}").any?
           matrix << 'rspec' if has_specs || has_compatibility_file || has_locale_files
 
           puts "Running jobs: #{matrix.inspect}"
