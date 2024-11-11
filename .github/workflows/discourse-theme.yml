@@ -326,7 +326,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Upload failed system test screenshots
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.build_type == 'rspec' && needs.check_for_tests.outputs.has_system_specs && failure()
         with:
           name: failed-system-test-screenshots
