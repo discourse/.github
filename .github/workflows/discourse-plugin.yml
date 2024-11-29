@@ -90,15 +90,15 @@ jobs:
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         shell: bash
         run: |
-          ${{ steps.js-pkg-manager.outputs.manager }} prettier -v
-          if [ -n "$(find assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.hbs" \) 2>/dev/null)" ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --list-different "assets/**/*.{scss,js,gjs,hbs}"
+          ${{ steps.js-pkg-manager.outputs.manager }} prettier --version
+          if [ -n "$(find assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "assets/**/*.{scss,js,gjs,hbs}"
           fi
-          if [ -n "$(find admin/assets -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.hbs" \) 2>/dev/null)" ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --list-different "admin/assets/**/*.{scss,js,gjs,hbs}"
+          if [ -n "$(find admin/assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "admin/assets/**/*.{scss,js,gjs,hbs}"
           fi
-          if [ 0 -lt $(find test -type f \( -name "*.js" -or -name "*.gjs" \) 2> /dev/null | wc -l) ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --list-different "test/**/*.{js,gjs}"
+          if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' \) 2> /dev/null | wc -l)" ]; then
+            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs}"
           fi
 
       - name: Ember template lint
