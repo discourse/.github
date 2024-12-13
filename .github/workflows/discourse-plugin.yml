@@ -247,7 +247,7 @@ jobs:
 
       - name: Lint English locale
         if: matrix.build_type == 'backend'
-        run: bundle exec ruby script/i18n_lint.rb "plugins/${{ env.PLUGIN_NAME }}/locales/{client,server}.en.yml"
+        run: bundle exec ruby script/i18n_lint.rb "plugins/${{ env.PLUGIN_NAME }}/config/locales/{client,server}.en.yml"
 
       - name: Get yarn cache directory
         id: yarn-cache-dir
