@@ -55,7 +55,7 @@ jobs:
         if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: ${{ steps.js-pkg-manager.outputs.manager }}
 
       - name: Install JS dependencies
