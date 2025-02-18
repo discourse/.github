@@ -85,7 +85,7 @@ jobs:
 
       - name: Stylelint
         if: ${{ !cancelled() }}
-        run: pnpm stylelint "{javascripts,desktop,mobile,common,scss}/**/*.scss"
+        run: pnpm stylelint --allow-empty-input "{javascripts,desktop,mobile,common,scss}/**/*.scss"
 
       - name: Prettier
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
