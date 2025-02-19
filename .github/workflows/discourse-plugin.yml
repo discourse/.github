@@ -86,6 +86,13 @@ jobs:
             ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
           fi
 
+      - name: Stylelint
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        run: |
+          if test -f stylelint.config.mjs; then
+            pnpm stylelint --allow-empty-input "assets/**/*.scss"
+          fi
+
       - name: Prettier
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         shell: bash
