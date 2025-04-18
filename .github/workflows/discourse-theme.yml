@@ -23,7 +23,7 @@ env:
 
 jobs:
   linting:
-    runs-on: ubuntu-latest
+    runs-on: ${{ ((github.repository_owner == 'discourse' || github.repository_owner == 'discourse-org') && 'debian-12') || 'ubuntu-latest' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -126,7 +126,7 @@ jobs:
           fi
 
   check_for_tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ ((github.repository_owner == 'discourse' || github.repository_owner == 'discourse-org') && 'debian-12') || 'ubuntu-latest' }}
     outputs:
       matrix: ${{ steps.check_tests.outputs.matrix }}
       has_tests: ${{ steps.check_tests.outputs.has_tests }}
@@ -174,7 +174,7 @@ jobs:
     name: ${{ matrix.build_type || '' }}_tests
     needs: check_for_tests
     if: ${{ needs.check_for_tests.outputs.has_tests }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ ((github.repository_owner == 'discourse' || github.repository_owner == 'discourse-org') && 'debian-12') || 'ubuntu-latest' }}
     container: discourse/discourse_test:slim-browsers
     timeout-minutes: 15
 
