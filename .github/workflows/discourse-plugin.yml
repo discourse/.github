@@ -12,6 +12,10 @@ on:
       core_ref:
         type: string
         required: false
+      runs_on:
+        type: string
+        required: false
+        default: "ubuntu-latest"
     secrets:
       ssh_private_key:
         description: "Optional SSH private key to be used when cloning additional plugin repos"
@@ -26,7 +30,7 @@ env:
 
 jobs:
   linting:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs_on }}
 
     steps:
       - uses: actions/checkout@v4
@@ -126,7 +130,7 @@ jobs:
           fi
 
   check_for_tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs_on }}
     outputs:
       matrix: ${{ steps.check_tests.outputs.matrix }}
       has_specs: ${{ steps.check_tests.outputs.has_specs }}
@@ -163,7 +167,7 @@ jobs:
 
   tests:
     name: ${{ matrix.build_type || '' }}_tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs_on }}
     container: discourse/discourse_test:slim${{ (matrix.build_type == 'frontend' || matrix.build_type == 'system') && '-browsers' || '' }}
     timeout-minutes: 30
     needs: check_for_tests
