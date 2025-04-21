@@ -131,8 +131,6 @@ jobs:
       matrix: ${{ steps.check_tests.outputs.matrix }}
       has_tests: ${{ steps.check_tests.outputs.has_tests }}
       has_compatibility_file: ${{ steps.check_tests.outputs.has_compatibility_file }}
-      has_specs: ${{ steps.check_tests.outputs.has_specs }}
-      has_system_specs: ${{ steps.check_tests.outputs.has_system_specs }}
 
     steps:
       - name: Install component
@@ -150,20 +148,19 @@ jobs:
           require 'json'
 
           has_system_specs = Dir.glob("spec/system/**/*.rb").any?
-          has_specs = Dir.glob("spec/**/*.rb").any?
+          has_rspec_specs = Dir.glob("spec/**/*.rb").reject { _1.start_with?("spec/system") }.any?
           has_compatibility_file = File.exist?(".discourse-compatibility")
           has_locale_files = File.exist?("locales/en.yml")
 
           matrix = []
 
           matrix << 'frontend' if Dir.glob("test/**/*.{js,gjs}").any?
-          matrix << 'rspec' if has_specs || has_compatibility_file || has_locale_files
+          matrix << 'rspec' if has_rspec_specs || has_compatibility_file || has_locale_files
+          matrix << 'system' if has_system_specs
 
           puts "Running jobs: #{matrix.inspect}"
 
           File.write(ENV["GITHUB_OUTPUT"], "matrix=#{matrix.to_json}\n", mode: 'a+')
-          File.write(ENV["GITHUB_OUTPUT"], "has_specs=true\n", mode: 'a+') if has_specs
-          File.write(ENV["GITHUB_OUTPUT"], "has_system_specs=true\n", mode: 'a+') if has_system_specs
           File.write(ENV["GITHUB_OUTPUT"], "has_compatibility_file=true\n", mode: 'a+') if has_compatibility_file
 
           if matrix.any?
@@ -321,20 +318,21 @@ jobs:
         run: bin/rake "compatibility:validate[tmp/component/.discourse-compatibility]"
 
       - name: Ember Build for System Tests
-        if: matrix.build_type == 'rspec' && needs.check_for_tests.outputs.has_system_specs
+        if: matrix.build_type == 'system'
         run: bin/ember-cli --build
 
       - name: Theme RSpec Tests
-        if: matrix.build_type == 'rspec' && needs.check_for_tests.outputs.has_specs
+        if: matrix.build_type == 'rspec'
         env:
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
           LOAD_PLUGINS: 1
-        run: bin/rspec --format documentation tmp/component/spec
+        run: |
+          bin/rspec --format documentation --exclude-pattern tmp/component/spec/system/**/*_spec.rb tmp/component/spec
         timeout-minutes: 10
 
       - name: Upload failed system test screenshots
         uses: actions/upload-artifact@v4
-        if: matrix.build_type == 'rspec' && needs.check_for_tests.outputs.has_system_specs && failure()
+        if: matrix.build_type == 'system' && failure()
         with:
           name: failed-system-test-screenshots
           path: tmp/capybara/*.png
