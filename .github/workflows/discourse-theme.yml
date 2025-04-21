@@ -283,7 +283,7 @@ jobs:
         with:
           path: tmp/app-cache
           key: >-
-            ${{ hashFiles('.github/workflows/tests.yml') }}-
+            ${{ hashFiles('.github/workflows/discourse-theme.yml') }}-
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
             ${{ env.RAILS_ENV }}
 
@@ -310,6 +310,12 @@ jobs:
             bin/rake db:migrate
           fi
 
+      - name: Create and migrate parallel databases
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        run: |
+          bin/rake parallel:create
+          script/silence_successful_output bin/rake parallel:migrate
+
       - name: Dump database for cache
         if: steps.app-cache.outputs.cache-hit != 'true'
         run: mkdir -p tmp/app-cache && pg_dumpall > tmp/app-cache/cache.sql
@@ -331,16 +337,15 @@ jobs:
         env:
           LOAD_PLUGINS: 1
         run: |
-          bin/rspec --format documentation --exclude-pattern tmp/component/spec/system/**/*_spec.rb tmp/component/spec
+          bin/turbo_rspec --verbose --format documentation --exclude-pattern="*spec/system*" tmp/component/spec
         timeout-minutes: 10
 
       - name: Theme System Tests
         if: matrix.build_type == 'system'
         env:
-          LOAD_PLUGINS: 1
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
-        run: |
-          bin/rspec --format documentation tmp/component/spec/system
+          LOAD_PLUGINS: 1
+        run: PARALLEL_TEST_PROCESSORS=$(($(nproc) / 2)) bin/turbo_rspec --verbose --format documentation tmp/component/spec/system
         timeout-minutes: 10
 
       - name: Upload failed system test screenshots

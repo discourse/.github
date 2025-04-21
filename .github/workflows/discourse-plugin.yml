@@ -279,7 +279,7 @@ jobs:
         with:
           path: tmp/app-cache
           key: >-
-            ${{ hashFiles('.github/workflows/tests.yml') }}-
+            ${{ hashFiles('.github/workflows/discourse-plugin.yml') }}-
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
 
       - name: Restore database from cache
@@ -304,6 +304,12 @@ jobs:
           else
             bin/rake db:migrate
           fi
+
+      - name: Create and migrate parallel databases
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        run: |
+          bin/rake parallel:create
+          script/silence_successful_output bin/rake parallel:migrate
 
       - name: Dump database for cache
         if: steps.app-cache.outputs.cache-hit != 'true'
@@ -350,7 +356,9 @@ jobs:
 
       - name: Plugin RSpec
         if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_specs
-        run: bin/rake plugin:spec[${{ env.PLUGIN_NAME }}]
+        env:
+          LOAD_PLUGINS: 1
+        run: bin/turbo_rspec --verbose --format documentation --exclude-pattern="*spec/system*" plugins/${{ env.PLUGIN_NAME }}/spec
 
       - name: Plugin QUnit
         if: matrix.build_type == 'frontend'
@@ -402,7 +410,7 @@ jobs:
         env:
           LOAD_PLUGINS: 1
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
-        run: bin/system_rspec plugins/${{ env.PLUGIN_NAME }}/spec/system
+        run: PARALLEL_TEST_PROCESSORS=$(($(nproc) / 2)) bin/turbo_rspec --verbose --format documentation plugins/${{ env.PLUGIN_NAME }}/spec/system
 
       - name: Upload failed system test screenshots
         uses: actions/upload-artifact@v4
