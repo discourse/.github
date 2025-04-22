@@ -187,6 +187,7 @@ jobs:
       RAILS_ENV: test
       DISCOURSE_DEV_DB: discourse_test
       CHEAP_SOURCE_MAPS: "1"
+      USES_PARALLEL_DATABASES: ${{ matrix.build_type == 'backend' || matrix.build_type == 'system' }}
 
     steps:
       - name: Set working directory owner
@@ -271,15 +272,23 @@ jobs:
       - name: Install JS dependencies
         run: if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else pnpm install --frozen-lockfile; fi
 
+      - name: Set PARALLEL_TEST_PROCESSORS for system tests
+        if: matrix.build_type == 'system'
+        run: |
+          echo "PARALLEL_TEST_PROCESSORS=$(($(nproc) / 2))" >> $GITHUB_ENV
+
       - name: Fetch app state cache
         uses: actions/cache@v4
         id: app-cache
         with:
           path: tmp/app-cache
           key: >-
+            ${{ runner.os }}-
             ${{ hashFiles('.github/workflows/discourse-theme.yml') }}-
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
-            ${{ env.RAILS_ENV }}
+            ${{ env.RAILS_ENV }}-
+            ${{ env.USES_PARALLEL_DATABASES }}-
+            ${{ env.PARALLEL_TEST_PROCESSORS }}-
 
       - name: Restore database from cache
         if: steps.app-cache.outputs.cache-hit == 'true'
@@ -305,7 +314,7 @@ jobs:
           fi
 
       - name: Create and migrate parallel databases
-        if: steps.app-cache.outputs.cache-hit != 'true'
+        if: env.USES_PARALLEL_DATABASES == 'true' && steps.app-cache.outputs.cache-hit != 'true'
         run: |
           bin/rake parallel:create
           script/silence_successful_output bin/rake parallel:migrate
@@ -339,7 +348,7 @@ jobs:
         env:
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
           LOAD_PLUGINS: 1
-        run: PARALLEL_TEST_PROCESSORS=$(($(nproc) / 2)) bin/turbo_rspec --verbose --format documentation tmp/component/spec/system
+        run: bin/turbo_rspec --verbose --format documentation tmp/component/spec/system
         timeout-minutes: 10
 
       - name: Upload failed system test screenshots
