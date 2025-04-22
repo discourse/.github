@@ -14,10 +14,14 @@ jobs:
   theme-workflow:
     uses: ./.github/workflows/discourse-theme.yml
     with:
+      runs_on: "debian-12"
+      container: "discourse/discourse_test:release"
       repository: "discourse/DiscoTOC"
 
   plugin-workflow:
     uses: ./.github/workflows/discourse-plugin.yml
     with:
+      runs_on: "debian-12"
+      container: "discourse/discourse_test:release"
       repository: "discourse/discourse-assign"
       name: "discourse-assign"

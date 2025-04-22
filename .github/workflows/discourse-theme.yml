@@ -9,6 +9,13 @@ on:
       core_ref:
         type: string
         required: false
+      runs_on:
+        type: string
+        required: false
+        default: "ubuntu-latest"
+      container:
+        type: string
+        required: false
     secrets:
       ssh_private_key:
         description: "Optional SSH private key to be used when cloning additional plugin repos"
@@ -23,7 +30,8 @@ env:
 
 jobs:
   linting:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs_on }}
+    container: ${{ inputs.container || 'discourse/discourse_test:slim' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -44,26 +52,12 @@ jobs:
             echo "manager=${{ env.JS_PKG_MANAGER_NULL_VALUE }}" >> $GITHUB_OUTPUT
           fi
 
-      - name: Install package manager
-        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
-        run: npm install -g ${{ steps.js-pkg-manager.outputs.manager }}
-
-      - name: Set up Node.js
-        if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: ${{ steps.js-pkg-manager.outputs.manager }}
-
       - name: Install JS dependencies
         if: steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE
         run: ${{ steps.js-pkg-manager.outputs.manager }} install --frozen-lockfile
 
-      - name: Set up ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.2"
-          bundler-cache: true
+      - name: Bundle install
+        run: bundle install
 
       - name: Check for .es6 files
         if: ${{ !cancelled() }}
@@ -126,7 +120,7 @@ jobs:
           fi
 
   check_for_tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs_on }}
     outputs:
       matrix: ${{ steps.check_tests.outputs.matrix }}
       has_tests: ${{ steps.check_tests.outputs.has_tests }}
@@ -175,8 +169,8 @@ jobs:
     name: ${{ matrix.build_type || '' }}_tests
     needs: check_for_tests
     if: ${{ needs.check_for_tests.outputs.has_tests }}
-    runs-on: ubuntu-latest
-    container: discourse/discourse_test:slim-browsers
+    runs-on: ${{ inputs.runs_on }}
+    container: ${{ inputs.container || 'discourse/discourse_test:slim-browsers' }}
     timeout-minutes: 15
 
     strategy:
