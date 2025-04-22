@@ -131,6 +131,8 @@ jobs:
       matrix: ${{ steps.check_tests.outputs.matrix }}
       has_tests: ${{ steps.check_tests.outputs.has_tests }}
       has_compatibility_file: ${{ steps.check_tests.outputs.has_compatibility_file }}
+      has_locale_files: ${{ steps.check_tests.outputs.has_locale_files }}
+      has_non_system_specs: ${{ steps.check_tests.outputs.has_non_system_specs }}
 
     steps:
       - name: Install component
@@ -148,20 +150,22 @@ jobs:
           require 'json'
 
           has_system_specs = Dir.glob("spec/system/**/*.rb").any?
-          has_rspec_specs = Dir.glob("spec/**/*.rb").reject { _1.start_with?("spec/system") }.any?
+          has_non_system_specs = Dir.glob("spec/**/*.rb").reject { _1.start_with?("spec/system") }.any?
           has_compatibility_file = File.exist?(".discourse-compatibility")
           has_locale_files = File.exist?("locales/en.yml")
 
           matrix = []
 
           matrix << 'frontend' if Dir.glob("test/**/*.{js,gjs}").any?
-          matrix << 'rspec' if has_rspec_specs || has_compatibility_file || has_locale_files
+          matrix << 'backend' if has_non_system_specs || has_compatibility_file || has_locale_files
           matrix << 'system' if has_system_specs
 
           puts "Running jobs: #{matrix.inspect}"
 
           File.write(ENV["GITHUB_OUTPUT"], "matrix=#{matrix.to_json}\n", mode: 'a+')
           File.write(ENV["GITHUB_OUTPUT"], "has_compatibility_file=true\n", mode: 'a+') if has_compatibility_file
+          File.write(ENV["GITHUB_OUTPUT"], "has_non_system_specs=true\n", mode: 'a+') if has_non_system_specs
+          File.write(ENV["GITHUB_OUTPUT"], "has_locale_files=true\n", mode: 'a+') if has_locale_files
 
           if matrix.any?
             File.write(ENV["GITHUB_OUTPUT"], "has_tests=true\n", mode: 'a+')
@@ -253,6 +257,7 @@ jobs:
           bundle clean
 
       - name: Lint English locale
+        if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_locale_files
         run: bundle exec ruby script/i18n_lint.rb "tmp/component/locales/en.yml"
 
       - name: Get yarn cache directory
@@ -314,7 +319,7 @@ jobs:
         run: rm -rf tmp/app-cache/uploads && cp -r public/uploads tmp/app-cache/uploads
 
       - name: Validate discourse-compatibility
-        if: matrix.build_type == 'rspec' && needs.check_for_tests.outputs.has_compatibility_file && !inputs.core_ref
+        if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_compatibility_file && !inputs.core_ref
         run: bin/rake "compatibility:validate[tmp/component/.discourse-compatibility]"
 
       - name: Ember Build for System Tests
@@ -322,12 +327,20 @@ jobs:
         run: bin/ember-cli --build
 
       - name: Theme RSpec Tests
-        if: matrix.build_type == 'rspec'
+        if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_non_system_specs
         env:
-          CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
           LOAD_PLUGINS: 1
         run: |
           bin/rspec --format documentation --exclude-pattern tmp/component/spec/system/**/*_spec.rb tmp/component/spec
+        timeout-minutes: 10
+
+      - name: Theme System Tests
+        if: matrix.build_type == 'system'
+        env:
+          LOAD_PLUGINS: 1
+          CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
+        run: |
+          bin/rspec --format documentation tmp/component/spec/system
         timeout-minutes: 10
 
       - name: Upload failed system test screenshots
