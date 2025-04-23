@@ -172,6 +172,7 @@ jobs:
       CHEAP_SOURCE_MAPS: "1"
       MINIO_RUNNER_LOG_LEVEL: DEBUG
       MINIO_RUNNER_INSTALL_DIR: /home/discourse/.minio_runner
+      USES_PARALLEL_DATABASES: ${{ matrix.build_type == 'backend' || matrix.build_type == 'system' }}
 
     strategy:
       fail-fast: false
@@ -263,14 +264,22 @@ jobs:
       - name: Install JS Dependencies
         run: if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else pnpm install --frozen-lockfile; fi
 
+      - name: Set PARALLEL_TEST_PROCESSORS for system tests
+        if: matrix.build_type == 'system'
+        run: |
+          echo "PARALLEL_TEST_PROCESSORS=$(($(nproc) / 2))" >> $GITHUB_ENV
+
       - name: Fetch app state cache
         uses: actions/cache@v4
         id: app-cache
         with:
           path: tmp/app-cache
           key: >-
+            ${{ runner.os }}-
             ${{ hashFiles('.github/workflows/discourse-plugin.yml') }}-
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
+            ${{ env.USES_PARALLEL_DATABASES }}-
+            ${{ env.PARALLEL_TEST_PROCESSORS }}-
 
       - name: Restore database from cache
         if: steps.app-cache.outputs.cache-hit == 'true'
@@ -296,7 +305,7 @@ jobs:
           fi
 
       - name: Create and migrate parallel databases
-        if: steps.app-cache.outputs.cache-hit != 'true'
+        if: env.USES_PARALLEL_DATABASES == 'true' && steps.app-cache.outputs.cache-hit != 'true'
         run: |
           bin/rake parallel:create
           script/silence_successful_output bin/rake parallel:migrate
@@ -400,7 +409,7 @@ jobs:
         env:
           LOAD_PLUGINS: 1
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
-        run: PARALLEL_TEST_PROCESSORS=$(($(nproc) / 2)) bin/turbo_rspec --verbose --format documentation plugins/${{ env.PLUGIN_NAME }}/spec/system
+        run: bin/turbo_rspec --verbose --format documentation plugins/${{ env.PLUGIN_NAME }}/spec/system
 
       - name: Upload failed system test screenshots
         uses: actions/upload-artifact@v4
