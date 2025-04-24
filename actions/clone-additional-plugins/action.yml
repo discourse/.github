@@ -87,6 +87,9 @@ runs:
 
             puts "Successfully cloned #{plugin_url}\n"
           end
+
+          puts "Ensuring compatible version for #{plugin_url}..."
+          system "bin/rake", "plugin:pull_compatible[#{File.basename(plugin_url)}]", exception: true
         end
 
         puts "Done cloning required plugins"
