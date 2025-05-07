@@ -416,7 +416,4 @@ jobs:
         if: matrix.build_type == 'system' && failure()
         with:
           name: failed-system-test-artifacts
-          path: |
-            tmp/capybara/*.png
-            tmp/capybara/*.zip
-            tmp/capybara/*.webm
+          path: tmp/capybara/*.{png,zip,webm}
