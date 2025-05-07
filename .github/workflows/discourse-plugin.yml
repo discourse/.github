@@ -411,9 +411,12 @@ jobs:
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
         run: bin/turbo_rspec --verbose --format documentation plugins/${{ env.PLUGIN_NAME }}/spec/system
 
-      - name: Upload failed system test screenshots
+      - name: Upload failed system test artifacts
         uses: actions/upload-artifact@v4
         if: matrix.build_type == 'system' && failure()
         with:
-          name: failed-system-test-screenshots
-          path: tmp/capybara/*.png
+          name: failed-system-test-artifacts
+          path: |
+            tmp/capybara/*.png
+            tmp/capybara/*.zip
+            tmp/capybara/*.webm
