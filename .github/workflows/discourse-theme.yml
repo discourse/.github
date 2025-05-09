@@ -340,7 +340,7 @@ jobs:
         env:
           LOAD_PLUGINS: 1
         run: |
-          bin/turbo_rspec --verbose --format documentation --exclude-pattern="*spec/system*" tmp/component/spec
+          bin/turbo_rspec --verbose --format documentation --exclude-patterns="*spec/system*" tmp/component/spec
         timeout-minutes: 10
 
       - name: Theme System Tests
