@@ -357,7 +357,7 @@ jobs:
         if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_specs
         env:
           LOAD_PLUGINS: 1
-        run: bin/turbo_rspec --verbose --format documentation --exclude-pattern="*spec/system*" plugins/${{ env.PLUGIN_NAME }}/spec
+        run: bin/turbo_rspec --verbose --format documentation --exclude-patterns="*spec/system*" plugins/${{ env.PLUGIN_NAME }}/spec
 
       - name: Plugin QUnit
         if: matrix.build_type == 'frontend'
