@@ -31,6 +31,10 @@ concurrency:
 env:
   JS_PKG_MANAGER_NULL_VALUE: "none"
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   linting:
     runs-on: ${{ inputs.runs_on }}
@@ -89,7 +93,6 @@ jobs:
 
       - name: Prettier
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
-        shell: bash
         run: |
           ${{ steps.js-pkg-manager.outputs.manager }} prettier --version
           if [ -n "$(find assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
@@ -217,7 +220,6 @@ jobs:
         run: |
           echo "ruby_version=$RUBY_VERSION" >> $GITHUB_OUTPUT
           echo "debian_release=$DEBIAN_RELEASE" >> $GITHUB_OUTPUT
-        shell: bash
 
       - name: Bundler cache
         uses: actions/cache@v4
