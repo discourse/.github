@@ -23,5 +23,5 @@ jobs:
     with:
       runs_on: "debian-12-8core"
       container: "discourse/discourse_test:release"
-      repository: "discourse/discourse-assign"
-      name: "discourse-assign"
+      repository: "discourse/discourse-prometheus-alert-receiver"
+      name: "discourse-prometheus-alert-receiver"
