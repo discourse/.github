@@ -76,7 +76,7 @@ runs:
             plugin_url = plugin
           end
 
-          if !plugin_url.includes("/")
+          if !plugin_url.include?("/")
             puts "Skipping install of #{plugin_url} since it's a core plugin"
             next
           end
