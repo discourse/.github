@@ -76,6 +76,11 @@ runs:
             plugin_url = plugin
           end
 
+          if !plugin_url.includes("/")
+            puts "Skipping install of #{plugin_url} since it's a core plugin"
+            next
+          end
+
           puts "Cloning #{plugin_url}..."
           try_each_key do
             args = ["-C", "plugins", "clone", "--depth", "1"]
