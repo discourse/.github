@@ -286,7 +286,7 @@ jobs:
           path: tmp/app-cache
           key: >-
             ${{ runner.os }}-
-            ${{ hashFiles('.github/workflows/discourse-theme.yml') }}-
+            ${{ hashFiles('tmp/component/.github/workflows/discourse-theme.yml') }}-
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
             ${{ env.RAILS_ENV }}-
             ${{ env.USES_PARALLEL_DATABASES }}-
