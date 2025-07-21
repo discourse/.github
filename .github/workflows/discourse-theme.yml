@@ -191,6 +191,7 @@ jobs:
       DISCOURSE_DEV_DB: discourse_test
       CHEAP_SOURCE_MAPS: "1"
       USES_PARALLEL_DATABASES: ${{ matrix.build_type == 'backend' || matrix.build_type == 'system' }}
+      PARALLEL_TEST_PROCESSORS: 1
 
     steps:
       - name: Set working directory owner
@@ -286,7 +287,7 @@ jobs:
           path: tmp/app-cache
           key: >-
             ${{ runner.os }}-
-            ${{ hashFiles('.github/workflows/discourse-theme.yml') }}-
+            ${{ hashFiles('tmp/component/.github/workflows/discourse-theme.yml') }}-
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
             ${{ env.RAILS_ENV }}-
             ${{ env.USES_PARALLEL_DATABASES }}-

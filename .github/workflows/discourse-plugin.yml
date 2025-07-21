@@ -176,6 +176,7 @@ jobs:
       MINIO_RUNNER_LOG_LEVEL: DEBUG
       MINIO_RUNNER_INSTALL_DIR: /home/discourse/.minio_runner
       USES_PARALLEL_DATABASES: ${{ matrix.build_type == 'backend' || matrix.build_type == 'system' }}
+      PARALLEL_TEST_PROCESSORS: 1
 
     strategy:
       fail-fast: false
@@ -266,10 +267,14 @@ jobs:
       - name: Install JS Dependencies
         run: if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else pnpm install --frozen-lockfile; fi
 
-      - name: Set PARALLEL_TEST_PROCESSORS for system tests
-        if: matrix.build_type == 'system'
+      - name: Set PARALLEL_TEST_PROCESSORS
+        if: matrix.build_type == 'system' || matrix.build_type == 'backend'
         run: |
-          echo "PARALLEL_TEST_PROCESSORS=$(($(nproc) / 2))" >> $GITHUB_ENV
+          if [ "${{ matrix.build_type }}" = "system" ]; then
+            echo "PARALLEL_TEST_PROCESSORS=$(($(nproc) / 2))" >> $GITHUB_ENV
+          else
+            echo "PARALLEL_TEST_PROCESSORS=$(nproc)" >> $GITHUB_ENV
+          fi
 
       - name: Fetch app state cache
         uses: actions/cache@v4
@@ -278,7 +283,7 @@ jobs:
           path: tmp/app-cache
           key: >-
             ${{ runner.os }}-
-            ${{ hashFiles('.github/workflows/discourse-plugin.yml') }}-
+            ${{ hashFiles(format('plugins/{0}/.github/workflows/discourse-plugin.yml', env.PLUGIN_NAME)) }}-
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
             ${{ env.USES_PARALLEL_DATABASES }}-
             ${{ env.PARALLEL_TEST_PROCESSORS }}-
