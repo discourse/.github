@@ -176,6 +176,7 @@ jobs:
       MINIO_RUNNER_LOG_LEVEL: DEBUG
       MINIO_RUNNER_INSTALL_DIR: /home/discourse/.minio_runner
       USES_PARALLEL_DATABASES: ${{ matrix.build_type == 'backend' || matrix.build_type == 'system' }}
+      PARALLEL_TEST_PROCESSORS: 1
 
     strategy:
       fail-fast: false
