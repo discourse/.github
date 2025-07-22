@@ -177,6 +177,7 @@ jobs:
       MINIO_RUNNER_INSTALL_DIR: /home/discourse/.minio_runner
       USES_PARALLEL_DATABASES: ${{ matrix.build_type == 'backend' || matrix.build_type == 'system' }}
       PARALLEL_TEST_PROCESSORS: 1
+      LOAD_PLUGINS: 1
 
     strategy:
       fail-fast: false
@@ -287,6 +288,7 @@ jobs:
             ${{ hashFiles('db/**/*', 'plugins/**/db/**/*') }}-
             ${{ env.USES_PARALLEL_DATABASES }}-
             ${{ env.PARALLEL_TEST_PROCESSORS }}-
+            ${{ env.LOAD_PLUGINS }}-
 
       - name: Restore database from cache
         if: steps.app-cache.outputs.cache-hit == 'true'
@@ -327,8 +329,6 @@ jobs:
 
       - name: Check Zeitwerk eager_load
         if: matrix.build_type == 'backend'
-        env:
-          LOAD_PLUGINS: 1
         run: |
           if ! bin/rails zeitwerk:check --trace; then
             echo
@@ -343,8 +343,6 @@ jobs:
 
       - name: Check Zeitwerk reloading
         if: matrix.build_type == 'backend'
-        env:
-          LOAD_PLUGINS: 1
         run: |
           if ! bin/rails runner 'Rails.application.reloader.reload!'; then
             echo
@@ -362,8 +360,6 @@ jobs:
 
       - name: Plugin RSpec
         if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_specs
-        env:
-          LOAD_PLUGINS: 1
         run: bin/turbo_rspec --verbose --format documentation --exclude-pattern="*spec/system*" plugins/${{ env.PLUGIN_NAME }}/spec
 
       - name: Plugin QUnit
@@ -419,7 +415,6 @@ jobs:
       - name: Plugin System Tests
         if: matrix.build_type == 'system'
         env:
-          LOAD_PLUGINS: 1
           CAPYBARA_DEFAULT_MAX_WAIT_TIME: 10
         run: bin/turbo_rspec --verbose --format documentation plugins/${{ env.PLUGIN_NAME }}/spec/system
 
