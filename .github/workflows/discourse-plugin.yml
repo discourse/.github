@@ -379,7 +379,12 @@ jobs:
         if: matrix.build_type == 'annotations'
         run: |
           bin/rake annotate:ensure_all_indexes
-          bin/annotate --models --model-dir plugins/${{ env.PLUGIN_NAME }}/app/models
+          if [ -f bin/annotate ]
+          then
+            bin/annotate --models --model-dir plugins/${{ env.PLUGIN_NAME }}/app/models
+          else
+            bin/annotaterb models --model-dir plugins/${{ env.PLUGIN_NAME }}/app/models
+          fi
 
           cd plugins/${{ env.PLUGIN_NAME }}
 
