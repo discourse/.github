@@ -12,6 +12,7 @@ on:
       core_ref:
         type: string
         required: false
+        default: "tests-passed"
       runs_on:
         type: string
         required: false
@@ -362,14 +363,23 @@ jobs:
         if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_specs
         run: bin/turbo_rspec --verbose --format documentation --exclude-pattern="*spec/system*" plugins/${{ env.PLUGIN_NAME }}/spec
 
+      - name: Ember Build
+        if: matrix.build_type == 'system' || matrix.build_type == 'frontend'
+        env:
+          EMBER_ENV: development
+        run: |
+          if [ -f script/assemble_ember_build.rb ]; then
+            script/assemble_ember_build.rb
+          else
+            bin/ember-cli --build
+          fi
+
       - name: Plugin QUnit
         if: matrix.build_type == 'frontend'
-        run: QUNIT_EMBER_CLI=1 bundle exec rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
+        env:
+          QUNIT_REUSE_BUILD: 1
+        run: bin/rake plugin:qunit['${{ env.PLUGIN_NAME }}','1200000']
         timeout-minutes: 10
-
-      - name: Ember Build for System Tests
-        if: matrix.build_type == 'system'
-        run: bin/ember-cli --build
 
       - name: Check Annotations
         if: matrix.build_type == 'annotations'
