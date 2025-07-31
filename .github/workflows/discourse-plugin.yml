@@ -271,8 +271,11 @@ jobs:
 
       - name: Install playwright
         if: matrix.build_type == 'system'
-        run: pnpm playwright -V && pnpm playwright install --with-deps --no-shell chromium
-      
+        run: |
+          if pnpm playwright -V; then
+            pnpm playwright install --with-deps --no-shell chromium
+          fi
+
       - name: Set PARALLEL_TEST_PROCESSORS
         if: matrix.build_type == 'system' || matrix.build_type == 'backend'
         run: |
