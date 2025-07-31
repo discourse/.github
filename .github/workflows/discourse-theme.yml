@@ -9,6 +9,7 @@ on:
       core_ref:
         type: string
         required: false
+        default: "tests-passed"
       runs_on:
         type: string
         required: false
@@ -275,6 +276,10 @@ jobs:
       - name: Install JS dependencies
         run: if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else pnpm install --frozen-lockfile; fi
 
+      - name: Install playwright
+        if: matrix.build_type == 'system'
+        run: pnpm playwright -V && pnpm playwright install --with-deps --no-shell chromium
+
       - name: Set PARALLEL_TEST_PROCESSORS for system tests
         if: matrix.build_type == 'system'
         run: |
@@ -334,9 +339,17 @@ jobs:
         if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_compatibility_file && !inputs.core_ref
         run: bin/rake "compatibility:validate[tmp/component/.discourse-compatibility]"
 
-      - name: Ember Build for System Tests
-        if: matrix.build_type == 'system'
-        run: bin/ember-cli --build
+      - name: Ember Build
+        if: matrix.build_type == 'system' || matrix.build_type == 'frontend'
+        env:
+          EMBER_ENV: development
+          DISCOURSE_DOWNLOAD_PRE_BUILT_ASSETS: "1"
+        run: |
+          if [ -f script/assemble_ember_build.rb ]; then
+            script/assemble_ember_build.rb
+          else
+            bin/ember-cli --build
+          fi
 
       - name: Theme RSpec Tests
         if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_non_system_specs
@@ -376,6 +389,7 @@ jobs:
           # Cloning components via git in the test env will fail because FinalDestination will return a fake IP
           # If we need this functionality in future, we'll need some refactoring in core.
           UPDATE_COMPONENTS: 0
+          QUNIT_REUSE_BUILD: 1
         run: |
           THEME_NAME=$(ruby -e 'require "json"; puts JSON.parse(File.read("tmp/component/about.json"))["name"]')
           THEME_ARCHIVE=theme.tar.gz bundle exec rake themes:install:archive
