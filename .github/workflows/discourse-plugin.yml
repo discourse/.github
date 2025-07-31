@@ -367,6 +367,7 @@ jobs:
         if: matrix.build_type == 'system' || matrix.build_type == 'frontend'
         env:
           EMBER_ENV: development
+          DISCOURSE_DOWNLOAD_PRE_BUILT_ASSETS: "1"
         run: |
           if [ -f script/assemble_ember_build.rb ]; then
             script/assemble_ember_build.rb
