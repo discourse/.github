@@ -276,6 +276,10 @@ jobs:
       - name: Install JS dependencies
         run: if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else pnpm install --frozen-lockfile; fi
 
+      - name: Install playwright
+        if: matrix.build_type == 'system'
+        run: pnpm playwright -V && pnpm playwright install --with-deps --no-shell chromium
+
       - name: Set PARALLEL_TEST_PROCESSORS for system tests
         if: matrix.build_type == 'system'
         run: |
