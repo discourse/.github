@@ -150,7 +150,7 @@ jobs:
           matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,gjs}").any?
           matrix << 'backend'
           matrix << 'system' if Dir.glob("spec/system/**/*.rb").any?
-          matrix << 'annotations' if Dir.glob("app/models/**/*.rb").any?
+          matrix << 'annotations' if Dir.glob("app/models/**/*.rb").reject { _1.match?("concerns") }.any?
 
           puts "Running jobs: #{matrix.inspect}"
 
