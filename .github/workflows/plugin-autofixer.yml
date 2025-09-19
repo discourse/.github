@@ -1,0 +1,710 @@
+
+# AI-Powered Autofix Workflow for Rails Specs
+#
+# This workflow automatically fixes failing specs using Claude AI and creates a PR with the fixes.
+#
+# WORKFLOW STEPS:
+# 1. 🏗️  env-setup      - Sets up Ruby/Rails environment and caches dependencies
+# 2. 🧪  run-tests      - Runs all specs to identify failures
+# 3. 🌿  branch-create  - Creates a new autofix branch for the fixes
+# 4. 🤖  ai-autofix     - Calls Claude AI to analyze failures and generate fixes
+# 5. 📝  create-pr      - Creates a PR with Claude's fixes and analysis
+# 6. ✅  verify-fix     - Runs the originally failing specs to verify the fix works
+#
+# TRIGGER: Manual dispatch via GitHub Actions UI
+# OUTPUT: PR with AI-generated fixes, automatically verified
+
+name: "Autofix (use Claude to create PR with fixes for failing specs)"
+on:
+  #  push:
+  #    branches: [ "main" ]
+  #  pull_request:
+  #    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  # Shared setup job to prepare environment once
+  env-setup:
+    runs-on: ubuntu-latest
+    outputs:
+      cache-key: ${{ steps.cache-info.outputs.cache-key }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate cache key
+        id: cache-info
+        run: |
+          CACHE_KEY="rails-env-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}-${{ hashFiles('**/package-lock.json') }}"
+          echo "cache-key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+
+      - name: Install Ruby and gems
+        uses: ruby/setup-ruby@78c01b705fd9d5ad960d432d3a0cfa341d50e410
+        with:
+          ruby-version: '3.3.1'
+          bundler-cache: true
+
+      - name: Cache Rails environment
+        uses: actions/cache@v3
+        with:
+          path: |
+            vendor/bundle
+            node_modules
+            tmp/cache
+          key: ${{ steps.cache-info.outputs.cache-key }}
+          restore-keys: |
+            rails-env-${{ runner.os }}-
+
+  # Test job - now uses cached environment
+  run-tests:
+    runs-on: ubuntu-latest
+    needs: env-setup
+    env:
+      RAILS_ENV: test
+    outputs:
+      test-result: ${{ steps.test-run.outcome }}
+      test-output: ${{ steps.test-run.outputs.test-output }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Restore cached environment
+        uses: actions/cache@v3
+        with:
+          path: |
+            vendor/bundle
+            node_modules
+            tmp/cache
+          key: ${{ needs.env-setup.outputs.cache-key }}
+
+      - name: Install Ruby (lightweight - gems already cached)
+        uses: ruby/setup-ruby@78c01b705fd9d5ad960d432d3a0cfa341d50e410
+        with:
+          ruby-version: '3.3.1'
+          bundler-cache: true  # Let ruby/setup-ruby handle bundler cache properly
+
+      - name: Set up database schema
+        run: bin/rails db:create db:migrate
+
+      - name: Run tests with output capture
+        id: test-run
+        run: |
+          echo "Running tests..."
+          
+          # Capture test output regardless of success/failure
+          set +e  # Don't exit on error
+          TEST_OUTPUT=$(bin/rake 2>&1)
+          TEST_EXIT_CODE=$?
+          set -e  # Re-enable exit on error
+          
+          # Always capture the output
+          echo "test-output<<EOF" >> $GITHUB_OUTPUT
+          if [ $TEST_EXIT_CODE -eq 0 ]; then
+            echo "TESTS PASSED" >> $GITHUB_OUTPUT
+          else
+            echo "TEST FAILURES:" >> $GITHUB_OUTPUT
+          fi
+          echo "$TEST_OUTPUT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Display the output in the log for immediate visibility
+          echo "=== TEST OUTPUT ==="
+          echo "$TEST_OUTPUT"
+          echo "=================="
+          
+          # Exit with the original test exit code
+          exit $TEST_EXIT_CODE
+
+  # Run autofix workflow if tests failed OR manual trigger
+  branch-create:
+    runs-on: ubuntu-latest
+    needs: [env-setup, run-tests]  # Add setup dependency for better layout
+    if: failure() && needs.run-tests.result == 'failure' || github.event_name == 'workflow_dispatch'
+    outputs:
+      branch_name: ${{ steps.branch-info.outputs.branch_name }}
+      failure_type: ${{ steps.branch-info.outputs.failure_type }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.AUTOFIX_TOKEN }}
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create branch info
+        id: branch-info
+        run: |
+          TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            BRANCH_NAME="autofix/manual-trigger-${TIMESTAMP}"
+            FAILURE_TYPE="manual"
+          else
+            BRANCH_NAME="autofix/ai-test-fix-${TIMESTAMP}"
+            FAILURE_TYPE="test"
+          fi
+          
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+          echo "failure_type=${FAILURE_TYPE}" >> $GITHUB_OUTPUT
+
+      - name: Create autofix branch
+        run: |
+          git checkout -b ${{ steps.branch-info.outputs.branch_name }}
+          git push origin ${{ steps.branch-info.outputs.branch_name }}
+
+  # Streamlined AI fix job - reuses environment and test output
+  ai-autofix:
+    runs-on: ubuntu-latest
+    needs: [env-setup, run-tests, branch-create]
+    if: failure() && needs.branch-create.result == 'success'
+    outputs:
+      has_changes: ${{ steps.ai-analysis.outputs.has_changes }}
+      modified_files: ${{ steps.ai-analysis.outputs.modified_files }}
+      pr_title: ${{ steps.ai-analysis.outputs.pr_title }}
+      pr_analysis: ${{ steps.ai-analysis.outputs.pr_analysis }}
+    steps:
+      - name: Checkout autofix branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.branch-create.outputs.branch_name }}
+          fetch-depth: 0
+          token: ${{ secrets.AUTOFIX_TOKEN }}
+
+      - name: Restore cached environment
+        uses: actions/cache@v3
+        with:
+          path: |
+            vendor/bundle
+            node_modules
+            tmp/cache
+          key: ${{ needs.env-setup.outputs.cache-key }}
+
+      - name: Install Ruby (lightweight)
+        uses: ruby/setup-ruby@78c01b705fd9d5ad960d432d3a0cfa341d50e410
+        with:
+          ruby-version: '3.3.1'
+          bundler-cache: true
+
+      - name: Analyze commit history (optimized)
+        id: commit-analysis
+        run: |
+          # Simplified commit analysis - get last 3 commits only
+          COMMITS_JSON=$(git log HEAD~3..HEAD --format='{"sha":"%H","message":"%s","author":"%an"}' | jq -s '.')
+          echo "commits_json<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS_JSON" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Get consolidated diff for recent commits
+          RECENT_DIFF=$(git diff HEAD~3..HEAD)
+          echo "recent_diff<<EOF" >> $GITHUB_OUTPUT
+          echo "$RECENT_DIFF" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Streamlined AI fix generation
+        id: ai-analysis
+        uses: actions/github-script@v7
+        env:
+          RECENT_DIFF: ${{ steps.commit-analysis.outputs.recent_diff }}
+          ERROR_OUTPUT: ${{ needs.run-tests.outputs.test-output }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: us-west-2
+        with:
+          github-token: ${{ secrets.AUTOFIX_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const { execSync } = require('child_process');
+            
+            const recentDiff = process.env.RECENT_DIFF || 'No recent changes';
+            const errorOutput = process.env.ERROR_OUTPUT || 'No error output available';
+            
+            if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+              console.log('ERROR: AWS credentials not found');
+              core.setOutput('has_changes', 'false');
+              return;
+            }
+            
+            // Load prompt from external file and substitute variables
+            const promptTemplate = fs.readFileSync('.github/claude-prompt.md', 'utf8');
+            const prompt = promptTemplate
+              .replace('{recentDiff}', recentDiff)
+              .replace('{errorOutput}', errorOutput);
+            
+            try {
+              console.log("Starting Claude AI analysis via AWS Bedrock...");
+            
+              // AWS Bedrock configuration
+              const region = process.env.AWS_REGION;
+              const modelId = 'us.anthropic.claude-sonnet-4-20250514-v1:0';
+              const bedrockUrl = `https://bedrock-runtime.${region}.amazonaws.com/model/${modelId}/invoke`;
+            
+              // Create AWS Signature V4 for authentication
+              const crypto = require('crypto');
+            
+              function createSignature(method, url, headers, body, accessKey, secretKey, region, service, timestamp) {
+                const algorithm = 'AWS4-HMAC-SHA256';
+                const date = timestamp.toISOString().slice(0, 10).replace(/-/g, '');
+                const credentialScope = `${date}/${region}/${service}/aws4_request`;
+            
+                // Create canonical request
+                const urlObj = new URL(url);
+                const canonicalUri = encodeURI(urlObj.pathname).replace(/:/g, '%3A');
+                const canonicalQueryString = urlObj.search.slice(1);
+            
+                const canonicalHeaders = Object.keys(headers)
+                  .sort()
+                  .map(key => `${key.toLowerCase()}:${headers[key].trim()}`)
+                  .join('\n') + '\n';
+            
+                const signedHeaders = Object.keys(headers)
+                  .sort()
+                  .map(key => key.toLowerCase())
+                  .join(';');
+            
+                const payloadHash = crypto.createHash('sha256').update(body).digest('hex');
+            
+                const canonicalRequest = [
+                  method,
+                  canonicalUri,
+                  canonicalQueryString,
+                  canonicalHeaders,
+                  signedHeaders,
+                  payloadHash
+                ].join('\n');
+            
+                // Create string to sign
+                const canonicalRequestHash = crypto.createHash('sha256').update(canonicalRequest).digest('hex');
+                const stringToSign = [
+                  algorithm,
+                  timestamp.toISOString().replace(/[:-]|\.\d{3}/g, ''),
+                  credentialScope,
+                  canonicalRequestHash
+                ].join('\n');
+            
+                // Create signing key
+                const kDate = crypto.createHmac('sha256', `AWS4${secretKey}`).update(date).digest();
+                const kRegion = crypto.createHmac('sha256', kDate).update(region).digest();
+                const kService = crypto.createHmac('sha256', kRegion).update(service).digest();
+                const kSigning = crypto.createHmac('sha256', kService).update('aws4_request').digest();
+            
+                const signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');
+            
+                return `${algorithm} Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+              }
+            
+              // Prepare request
+              const timestamp = new Date();
+              const body = JSON.stringify({
+                anthropic_version: 'bedrock-2023-05-31',
+                max_tokens: 2000,
+                temperature: 0.1,
+                system: 'You are an expert Rails developer. You are intimately familiar with the discourse core codebase and variety of techniques for creating discourse plugins. Fix test failures efficiently. Make sure to use the latest approaches to Discourse plugin development.',
+                messages: [
+                  {
+                    role: 'user',
+                    content: prompt
+                  }
+                ]
+              });
+            
+              const headers = {
+                'Content-Type': 'application/json',
+                'X-Amz-Date': timestamp.toISOString().replace(/[:-]|\.\d{3}/g, ''),
+                'Host': `bedrock-runtime.${region}.amazonaws.com`
+              };
+            
+              const authorization = createSignature(
+                'POST',
+                bedrockUrl,
+                headers,
+                body,
+                process.env.AWS_ACCESS_KEY_ID,
+                process.env.AWS_SECRET_ACCESS_KEY,
+                region,
+                'bedrock',
+                timestamp
+              );
+            
+              headers['Authorization'] = authorization;
+            
+              // Make the API call
+              const response = await fetch(bedrockUrl, {
+                method: 'POST',
+                headers: headers,
+                body: body
+              });
+            
+              if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`AWS Bedrock API error: ${response.status} ${response.statusText}`);
+                console.error(`Error details: ${errorText}`);
+                throw new Error(`AWS Bedrock API failed with status ${response.status}: ${response.statusText}. Details: ${errorText}`);
+              }
+            
+              const responseData = await response.json();
+              let hasChanges = false;
+              const modifiedFiles = []; // Track files we actually modify
+              let commitMessage = "🤖 Claude AI fixes applied"; // Declare at proper scope
+              let prTitle = "AI Autofix: Resolve test failures"; // Declare at proper scope
+              let prAnalysis = "Claude AI attempted to fix failing tests."; // Declare at proper scope
+            
+              if (responseData?.content?.[0]?.text) {
+                const analysis = responseData.content[0].text.trim();
+                console.log("Claude AI analysis received, parsing...");
+                console.log("=== FULL CLAUDE RESPONSE ===");
+                console.log(analysis);
+                console.log("=== END CLAUDE RESPONSE ===");
+            
+                // Extract PR title and analysis with flexible parsing
+                const prTitleMatch = analysis.match(/PR_TITLE:\s*\n(.+?)(?=\n\n|\nPR_ANALYSIS:|\nFILE:|$)/s);
+                if (prTitleMatch) {
+                  prTitle = prTitleMatch[1].trim();
+                  console.log(`📋 Generated PR title: ${prTitle}`);
+                } else {
+                  // Fallback: try to extract from commit message or use default
+                  const commitMatch = analysis.match(/COMMIT_MESSAGE:\s*\n(.+?)(?=\n\n|$)/s);
+                  if (commitMatch) {
+                    prTitle = commitMatch[1].trim();
+                    console.log(`📋 Using commit message as PR title: ${prTitle}`);
+                  } else {
+                    prTitle = "AI Autofix: Resolve test failures";
+                    console.log(`📋 Using default PR title: ${prTitle}`);
+                  }
+                }
+            
+                const prAnalysisMatch = analysis.match(/PR_ANALYSIS:\s*\n([\s\S]+?)(?=\nFILE:|$)/);
+                if (prAnalysisMatch) {
+                  prAnalysis = prAnalysisMatch[1].trim();
+                  console.log(`📊 Generated PR analysis: ${prAnalysis.substring(0, 100)}...`);
+                } else {
+                  // Fallback: use everything before FILE: as analysis
+                  const beforeFileMatch = analysis.match(/^([\s\S]+?)(?=\nFILE:|$)/);
+                  if (beforeFileMatch) {
+                    prAnalysis = beforeFileMatch[1].trim();
+                    console.log(`📊 Using everything before FILE as PR analysis: ${prAnalysis.substring(0, 100)}...`);
+                  } else {
+                    prAnalysis = "Claude AI attempted to fix failing tests but no analysis was provided.";
+                    console.log(`📊 Using default PR analysis`);
+                  }
+                }
+            
+                // Extract commit message
+                const commitMatch = analysis.match(/COMMIT_MESSAGE:\s*\n(.+?)(?=\n\n|$)/s);
+                if (commitMatch) {
+                  commitMessage = commitMatch[1].trim();
+                  console.log(`📝 Generated commit message: ${commitMessage}`);
+                }
+            
+                // Parse and apply fixes
+                const sections = analysis.split('FILE:');
+            
+                for (const section of sections) {
+                  if (!section.trim()) continue;
+            
+                  const lines = section.trim().split('\n');
+                  const filePath = lines[0].trim();
+            
+                  if (!fs.existsSync(filePath)) {
+                    console.log(`⚠️  File not found: ${filePath}`);
+                    continue;
+                  }
+            
+                  const contentIndex = lines.findIndex(line => line.startsWith('CONTENT:'));
+                  if (contentIndex === -1) {
+                    console.log(`⚠️  No CONTENT section found for: ${filePath}`);
+                    continue;
+                  }
+            
+                  // Find where CONTENT section ends (before COMMIT_MESSAGE or end of section)
+                  let contentEndIndex = lines.length;
+                  for (let i = contentIndex + 1; i < lines.length; i++) {
+                    if (lines[i].startsWith('COMMIT_MESSAGE:')) {
+                      contentEndIndex = i;
+                      break;
+                    }
+                  }
+            
+                  const newContent = lines.slice(contentIndex + 1, contentEndIndex).join('\n').trim();
+            
+                  if (newContent && newContent.length > 10) {
+                    // Read original content for comparison
+                    const originalContent = fs.readFileSync(filePath, 'utf8');
+            
+                    // Only modify if content is actually different
+                    if (originalContent.trim() !== newContent.trim()) {
+                      // Write the new content
+                      fs.writeFileSync(filePath, newContent, 'utf8');
+                      hasChanges = true;
+                      modifiedFiles.push(filePath);
+            
+                      console.log(`✅ Applied fix to ${filePath}`);
+                    } else {
+                      console.log(`ℹ️  No changes needed for ${filePath} (content identical)`);
+                    }
+                  } else {
+                    console.log(`⚠️  Content too short or empty for: ${filePath}`);
+                  }
+                }
+              } else {
+                console.log('⚠️  No content found in Claude response');
+              }
+            
+              console.log(`\n📊 Summary: ${modifiedFiles.length} files modified, hasChanges: ${hasChanges}`);
+            
+              // Output the list of modified files and commit message for the next step
+              if (hasChanges) {
+                console.log(`\n📊 Modified files: ${modifiedFiles.join(', ')}`);
+                core.setOutput('modified_files', modifiedFiles.join(','));
+              } else {
+                console.log(`\n📊 No files were modified by Claude AI`);
+                core.setOutput('modified_files', 'No files modified');
+              }
+            
+              // Always output commit message (even if no changes, for debugging)
+              // Write commit message to file to avoid GitHub Actions variable substitution issues
+              const commitMessageWithPrefix = `FIX: 🤖 ${commitMessage.replace(/\n/g, ' ').replace(/\r/g, '').trim()}`;
+              fs.writeFileSync('/tmp/commit_message.txt', commitMessageWithPrefix, 'utf8');
+              console.log(`📝 Commit message written to file: ${commitMessageWithPrefix}`);
+            
+              // Output PR title and analysis for PR creation (with fallbacks)
+              const finalPrTitle = prTitle || "Resolve test failures";
+              const finalPrAnalysis = prAnalysis || "Claude AI attempted to fix failing tests but no detailed analysis was provided.";
+            
+              console.log(`🎯 Final PR title: "${finalPrTitle}"`);
+              console.log(`🎯 Final PR analysis length: ${finalPrAnalysis.length} characters`);
+            
+              core.setOutput('pr_title', finalPrTitle);
+              core.setOutput('pr_analysis', finalPrAnalysis);
+              core.setOutput('has_changes', hasChanges.toString());
+            
+            } catch (error) {
+              console.error("Claude AI analysis error:", error.message);
+              core.setOutput('has_changes', 'false');
+            
+              // CRITICAL: Fail the step when Bedrock API fails
+              core.setFailed(`Claude AI analysis failed: ${error.message}`);
+              throw error; // Re-throw to ensure step fails
+            }
+
+      - name: Show changes made
+        if: steps.ai-analysis.outputs.has_changes == 'true'
+        run: |
+          echo "📊 Files modified by Claude AI:"
+          echo "${{ steps.ai-analysis.outputs.modified_files }}" | tr ',' '\n' | sed 's/^/  ✅ /'
+          
+          echo ""
+          echo "📋 Git status:"
+          git status --porcelain
+          
+          echo ""
+          echo "📝 Full diff of changes:"
+          git diff
+
+      - name: Commit and push AI fixes
+        if: steps.ai-analysis.outputs.has_changes == 'true'
+        run: |
+          # Configure git user
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Stage only the modified files
+          echo "📁 Staging modified files..."
+          echo "${{ steps.ai-analysis.outputs.modified_files }}" | tr ',' '\n' | while read file; do
+            if [ -n "$file" ]; then
+              git add "$file"
+              echo "   ✅ Staged: $file"
+            fi
+          done
+          
+          # Commit the changes using Claude's generated commit message from file
+          # This avoids GitHub Actions variable substitution issues with special characters
+          git commit -F /tmp/commit_message.txt
+          
+          # Push the changes
+          git push origin ${{ needs.branch-create.outputs.branch_name }}
+          
+          echo "✅ Successfully committed and pushed AI fixes"
+
+  # Commit and PR creation (unchanged but now more efficient due to upstream optimizations)
+  create-pr:
+    runs-on: ubuntu-latest
+    needs: [env-setup, run-tests, branch-create, ai-autofix]  # Add setup for consistent layout
+    if: failure() && needs.ai-autofix.result == 'success' && needs.ai-autofix.outputs.has_changes == 'true'
+    steps:
+      - name: Checkout autofix branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.branch-create.outputs.branch_name }}
+          fetch-depth: 0
+          token: ${{ secrets.AUTOFIX_TOKEN }}
+
+      - name: Create PR with AI fix details
+        uses: actions/github-script@v7
+        env:
+          PR_TITLE: ${{ needs.ai-autofix.outputs.pr_title }}
+          PR_ANALYSIS: ${{ needs.ai-autofix.outputs.pr_analysis }}
+          MODIFIED_FILES: ${{ needs.ai-autofix.outputs.modified_files }}
+          BRANCH_NAME: ${{ needs.branch-create.outputs.branch_name }}
+        with:
+          github-token: ${{ secrets.AUTOFIX_TOKEN }}
+          script: |
+            const prTitle = process.env.PR_TITLE || 'Resolve test failures';
+            const prAnalysis = process.env.PR_ANALYSIS || 'Claude AI attempted to fix failing tests.';
+            const modifiedFiles = process.env.MODIFIED_FILES || 'No files modified';
+            const branchName = process.env.BRANCH_NAME || 'autofix-branch';
+            
+            const title = `DEV: 🤖 ${prTitle}`;
+            
+            const timestamp = new Date().toISOString();
+            const body = `## 🤖 AI-Generated Test Fix
+            
+            This PR was automatically created by Claude AI to fix failing specs in this Discourse plugin.
+            
+            ### 🧠 Claude's Analysis
+            
+            ${prAnalysis}
+            
+            ### 📋 Changes Made
+            - **Files Modified:** ${modifiedFiles}
+            - **Branch:** \`${branchName}\`
+            - **Generated:** ${timestamp}
+            ### 🧪 Next Steps
+            1. Review Claude's analysis and reasoning above
+            2. Examine the proposed code changes
+            3. Run tests locally to verify the fix works
+            4. Refine the solution if needed
+            5. Merge when satisfied with the fix
+            
+            *Generated by Claude AI via GitHub Actions*`;
+            
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              head: '${{ needs.branch-create.outputs.branch_name }}',
+              base: 'main',
+              body: body
+            });
+            
+            console.log(`Created optimized AI autofix PR: ${pr.html_url}`);
+            
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: ['🤖 autofix']
+            });
+            
+            // Store PR number for verification step
+            core.setOutput('pr_number', pr.number);
+
+  # Verify the fix by running the originally failing specs
+  verify-fix:
+    runs-on: ubuntu-latest
+    needs: [env-setup, run-tests, branch-create, ai-autofix, create-pr]
+    if: failure() && needs.create-pr.result == 'success'
+    steps:
+      - name: Checkout autofix branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.branch-create.outputs.branch_name }}
+          fetch-depth: 0
+          token: ${{ secrets.AUTOFIX_TOKEN }}
+
+      - name: Restore cached environment
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            vendor/bundle
+            node_modules
+            tmp/cache
+          key: ${{ needs.env-setup.outputs.cache-key }}
+          restore-keys: |
+            rails-${{ runner.os }}-${{ hashFiles('**/Gemfile.lock') }}-
+            rails-${{ runner.os }}-
+
+      - name: Install Ruby (lightweight)
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: false  # Use cached gems
+
+      - name: Run originally failing specs
+        id: verify-specs
+        run: |
+          echo "🧪 Running originally failing specs to verify Claude's fix..."
+
+          # Run the same specs that originally failed
+          if bundle exec rspec --format documentation --color 2>&1 | tee spec_output.txt; then
+            echo "✅ All specs are now passing!"
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Some specs are still failing"
+            echo "status=failure" >> $GITHUB_OUTPUT
+          fi
+          
+          # Capture the output for PR comment
+          echo "SPEC_OUTPUT<<EOF" >> $GITHUB_OUTPUT
+          cat spec_output.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Comment on PR with verification results
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.AUTOFIX_TOKEN }}
+          script: |
+            const status = '${{ steps.verify-specs.outputs.status }}';
+            const specOutput = `${{ steps.verify-specs.outputs.SPEC_OUTPUT }}`;
+            
+            const statusIcon = status === 'success' ? '✅' : '❌';
+            const statusText = status === 'success' ? 'PASSED' : 'FAILED';
+            const statusColor = status === 'success' ? '🟢' : '🔴';
+            
+            const body = `## ${statusIcon} Fix Verification Results
+            
+            **Status**: ${statusColor} **${statusText}**
+            
+            Claude's proposed fix has been automatically tested by running the originally failing specs.
+            
+            ### 🧪 Spec Results
+            \`\`\`
+            ${specOutput}
+            \`\`\`
+            
+            ${status === 'success' 
+              ? '🎉 **Great news!** All specs are now passing. Claude\'s fix appears to be working correctly.' 
+              : '⚠️ **Needs attention:** Some specs are still failing. The fix may need refinement or there could be additional issues.'}
+            
+            *Verification completed automatically after PR creation*`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ needs.create-pr.outputs.pr_number }},
+              body: body
+            });
+            
+            // Update PR labels based on verification results
+            if (status === 'success') {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: ${{ needs.create-pr.outputs.pr_number }},
+                labels: ['✅ fix-verified']
+              });
+            } else {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: ${{ needs.create-pr.outputs.pr_number }},
+                labels: ['❌ fix-needs-work']
+              });
+            }
