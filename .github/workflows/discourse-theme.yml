@@ -9,7 +9,7 @@ on:
       core_ref:
         type: string
         required: false
-        default: "tests-passed"
+        default: "latest"
       runs_on:
         type: string
         required: false
