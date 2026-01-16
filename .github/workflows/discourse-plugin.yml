@@ -78,7 +78,9 @@ jobs:
       - name: ESLint
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
-          if test -f eslint.config.mjs; then
+          if grep -q 'lint:js' package.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:js
+          elif test -f eslint.config.mjs; then
             # modern flat config. No --ext needed
             ${{ steps.js-pkg-manager.outputs.manager }} eslint --no-error-on-unmatched-pattern {test,assets,admin/assets}/javascripts
           else
@@ -88,7 +90,9 @@ jobs:
       - name: Stylelint
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
-          if test -f stylelint.config.mjs; then
+          if grep -q 'lint:css' package.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:css
+          elif test -f stylelint.config.mjs; then
             pnpm stylelint --allow-empty-input "assets/**/*.scss"
           fi
 
@@ -96,19 +100,29 @@ jobs:
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
           ${{ steps.js-pkg-manager.outputs.manager }} prettier --version
-          if [ -n "$(find assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "assets/**/*.{scss,js,gjs,hbs}"
-          fi
-          if [ -n "$(find admin/assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "admin/assets/**/*.{scss,js,gjs,hbs}"
-          fi
-          if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' \) 2> /dev/null | wc -l)" ]; then
-            ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs}"
+
+          if grep -q 'lint:prettier' package.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:prettier
+          else
+            if [ -n "$(find assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "assets/**/*.{scss,js,gjs,hbs}"
+            fi
+            if [ -n "$(find admin/assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "admin/assets/**/*.{scss,js,gjs,hbs}"
+            fi
+            if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' \) 2> /dev/null | wc -l)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs}"
+            fi
           fi
 
       - name: Ember template lint
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
-        run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern assets/javascripts admin/assets/javascripts
+        run: |
+          if grep -q 'lint:hbs' package.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:hbs
+          else
+            ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern assets/javascripts admin/assets/javascripts
+          fi
 
       - name: Types
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
