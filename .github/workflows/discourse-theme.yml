@@ -105,6 +105,13 @@ jobs:
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: ${{ steps.js-pkg-manager.outputs.manager }} ember-template-lint --no-error-on-unmatched-pattern javascripts
 
+      - name: Types
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        run: |
+          if test -f tsconfig.json; then
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:types
+          fi
+
       - name: Rubocop
         if: ${{ !cancelled() }}
         run: |
