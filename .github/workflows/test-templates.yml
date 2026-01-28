@@ -14,14 +14,14 @@ jobs:
   theme-workflow:
     uses: ./.github/workflows/discourse-theme.yml
     with:
-      runs_on: "debian-12-8core"
+      runs_on: "cdck-linux-8-core"
       container: "discourse/discourse_test:release"
       repository: "discourse/DiscoTOC"
 
   plugin-workflow:
     uses: ./.github/workflows/discourse-plugin.yml
     with:
-      runs_on: "debian-12-8core"
+      runs_on: "cdck-linux-8-core"
       container: "discourse/discourse_test:release"
       repository: "discourse/discourse-prometheus-alert-receiver"
       name: "discourse-prometheus-alert-receiver"
