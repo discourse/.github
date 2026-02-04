@@ -42,9 +42,13 @@ jobs:
     container: ${{ inputs.container || 'discourse/discourse_test:slim' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Set working directory owner
+        run: chown root:root .
+
+      - uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repository }}
+          fetch-depth: 1
 
       - name: Determine JS package manager
         id: js-pkg-manager
@@ -153,7 +157,7 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repository }}
           path: tmp/plugin
@@ -211,14 +215,14 @@ jobs:
       - name: Set working directory owner
         run: chown root:root .
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: discourse/discourse
           fetch-depth: 1
           ref: ${{ inputs.core_ref }}
 
       - name: Install plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repository }}
           path: plugins/${{ env.PLUGIN_NAME }}
@@ -246,7 +250,7 @@ jobs:
           echo "debian_release=$DEBIAN_RELEASE" >> $GITHUB_OUTPUT
 
       - name: Bundler cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor/bundle
           key: ${{ runner.os }}-${{ steps.container-envs.outputs.ruby_version }}-${{ steps.container-envs.outputs.debian_release }}-gem-${{ hashFiles('**/Gemfile.lock') }}
@@ -278,7 +282,7 @@ jobs:
         run: if [ -f yarn.lock ]; then echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT; fi
 
       - name: Yarn cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: yarn-cache
         if: ${{ steps.yarn-cache-dir.outputs.dir }}
         with:
@@ -307,7 +311,7 @@ jobs:
           fi
 
       - name: Fetch app state cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: app-cache
         with:
           path: tmp/app-cache
@@ -442,7 +446,7 @@ jobs:
 
       - name: Minio cache
         if: matrix.build_type == 'system'
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.MINIO_RUNNER_INSTALL_DIR }}
           key: ${{ runner.os }}-${{ steps.container-envs.outputs.ruby_version }}-${{ steps.container-envs.outputs.debian_release }}
@@ -458,7 +462,7 @@ jobs:
         run: bin/turbo_rspec --verbose --format documentation plugins/${{ env.PLUGIN_NAME }}/spec/system
 
       - name: Upload failed system test artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: matrix.build_type == 'system' && failure()
         with:
           name: failed-system-test-artifacts

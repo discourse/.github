@@ -39,9 +39,13 @@ jobs:
     container: ${{ inputs.container || 'discourse/discourse_test:slim' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Set working directory owner
+        run: chown root:root .
+
+      - uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repository }}
+          fetch-depth: 1
 
       - name: Determine JS package manager
         id: js-pkg-manager
@@ -155,7 +159,7 @@ jobs:
 
     steps:
       - name: Install component
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repository }}
           path: tmp/component
@@ -219,14 +223,14 @@ jobs:
       - name: Set working directory owner
         run: chown root:root .
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: discourse/discourse
           fetch-depth: 1
           ref: ${{ inputs.core_ref }}
 
       - name: Install component
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.repository }}
           path: tmp/component
@@ -254,7 +258,7 @@ jobs:
           echo "debian_release=$DEBIAN_RELEASE" >> $GITHUB_OUTPUT
 
       - name: Bundler cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: vendor/bundle
           key: ${{ runner.os }}-${{ steps.container-envs.outputs.ruby_version }}-${{ steps.container-envs.outputs.debian_release }}-gem-${{ hashFiles('**/Gemfile.lock') }}
@@ -285,7 +289,7 @@ jobs:
         run: if [ -f yarn.lock ]; then echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT; fi
 
       - name: Yarn cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: yarn-cache
         if: ${{ steps.yarn-cache-dir.outputs.dir }}
         with:
@@ -307,7 +311,7 @@ jobs:
           echo "PARALLEL_TEST_PROCESSORS=$(($(nproc) / 2))" >> $GITHUB_ENV
 
       - name: Fetch app state cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: app-cache
         with:
           path: tmp/app-cache
@@ -389,7 +393,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Upload failed system test artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: matrix.build_type == 'system' && failure()
         with:
           name: failed-system-test-artifacts
