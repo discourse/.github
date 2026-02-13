@@ -218,6 +218,7 @@ jobs:
       CHEAP_SOURCE_MAPS: "1"
       USES_PARALLEL_DATABASES: ${{ matrix.build_type == 'backend' || matrix.build_type == 'system' }}
       PARALLEL_TEST_PROCESSORS: 1
+      DISCOURSE_DEV_LOG_LEVEL: info
 
     steps:
       - name: Set working directory owner
@@ -414,8 +415,12 @@ jobs:
           # If we need this functionality in future, we'll need some refactoring in core.
           UPDATE_COMPONENTS: 0
           QUNIT_REUSE_BUILD: 1
+          RAILS_ENABLE_TEST_LOG: 1
         run: |
           THEME_NAME=$(ruby -e 'require "json"; puts JSON.parse(File.read("tmp/component/about.json"))["name"]')
           THEME_ARCHIVE=theme.tar.gz bundle exec rake themes:install:archive
-          UNICORN_TIMEOUT=120 bundle exec rake "themes:qunit[name,$THEME_NAME]"
+          bundle exec rake "themes:qunit[name,$THEME_NAME]"
         timeout-minutes: 10
+
+      - name: Chrome logs
+        run: cat ~/.config/google-chrome/Default/chrome_debug.log
