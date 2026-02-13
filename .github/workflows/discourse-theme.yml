@@ -407,6 +407,11 @@ jobs:
           cd tmp/component
           git archive --format=tar.gz HEAD > ../../theme.tar.gz
 
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: true
+
       - name: Component QUnit
         if: matrix.build_type == 'frontend'
         env:
