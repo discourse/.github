@@ -17,6 +17,7 @@ jobs:
       runs_on: "cdck-linux-8-core"
       container: "discourse/discourse_test:release"
       repository: "discourse/discourse-redditish-theme"
+      core_ref: "debug-theme-qunit"
 
   # plugin-workflow:
   #   uses: ./.github/workflows/discourse-plugin.yml
