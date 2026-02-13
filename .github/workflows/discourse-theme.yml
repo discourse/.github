@@ -417,5 +417,5 @@ jobs:
         run: |
           THEME_NAME=$(ruby -e 'require "json"; puts JSON.parse(File.read("tmp/component/about.json"))["name"]')
           THEME_ARCHIVE=theme.tar.gz bundle exec rake themes:install:archive
-          UNICORN_TIMEOUT=120 bundle exec rake "themes:qunit[name,$THEME_NAME]"
+          bundle exec rake "themes:qunit[name,$THEME_NAME]"
         timeout-minutes: 10
