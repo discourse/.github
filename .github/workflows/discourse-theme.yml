@@ -414,6 +414,7 @@ jobs:
           # If we need this functionality in future, we'll need some refactoring in core.
           UPDATE_COMPONENTS: 0
           QUNIT_REUSE_BUILD: 1
+          RAILS_ENABLE_TEST_LOG: 1
         run: |
           THEME_NAME=$(ruby -e 'require "json"; puts JSON.parse(File.read("tmp/component/about.json"))["name"]')
           THEME_ARCHIVE=theme.tar.gz bundle exec rake themes:install:archive
