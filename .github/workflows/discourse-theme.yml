@@ -419,3 +419,6 @@ jobs:
           THEME_ARCHIVE=theme.tar.gz bundle exec rake themes:install:archive
           bundle exec rake "themes:qunit[name,$THEME_NAME]"
         timeout-minutes: 10
+
+      - name: Chrome logs
+        run: cat ~/.config/google-chrome/Default/chrome_debug.log
