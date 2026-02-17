@@ -209,7 +209,6 @@ jobs:
         build_type: ${{ fromJSON(needs.check_for_tests.outputs.matrix) }}
 
     env:
-      DISCOURSE_HOSTNAME: www.example.com
       RUBY_GLOBAL_METHOD_CACHE_SIZE: 131072
       PGUSER: discourse
       PGPASSWORD: discourse
