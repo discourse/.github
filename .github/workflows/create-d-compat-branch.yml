@@ -32,7 +32,7 @@ jobs:
 
           version = refs
             .lines
-            .map { _1.match(/(v\d{4}\.\d+)\.\d+/)[1] }
+            .map { _1.match(/v(\d{4}\.\d+)\.\d+/)[1] }
             .sort
             .last
 
