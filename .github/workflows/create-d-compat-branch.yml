@@ -30,7 +30,7 @@ jobs:
           version = refs
             .lines
             .map { _1.match(/v(\d{4}\.\d+)\.\d+/)[1] }
-            .sort
+            .sort_by! { Gem::Version.new(_1) }
             .last
 
           branch = "d-compat/#{version}"
