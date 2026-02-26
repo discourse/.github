@@ -1,0 +1,51 @@
+name: Create d-compat branch
+
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: create-d-compat-branch
+  cancel-in-progress: false
+
+jobs:
+  create_branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Get latest Discourse tag
+        id: get_tag
+        shell: ruby {0}
+        run: |
+          refs = `git ls-remote --refs --tags https://github.com/discourse/discourse 'refs/tags/v20*'`
+          abort "Failed to fetch tags from discourse/discourse" unless $?.success?
+
+          version = refs
+            .lines
+            .map { _1.match(/^v(\d{4}\.\d+)\.0$/)[1] }
+            .sort_by! { Gem::Version.new(_1) }
+            .last
+
+          branch = "d-compat/#{version}"
+          puts "New branch name: #{branch}"
+
+          File.write(ENV.fetch("GITHUB_OUTPUT"), "branch=#{branch}\n", mode: "a+")
+
+      - name: Create new branch
+        shell: bash
+        run: |
+          branch="${{ steps.get_tag.outputs.branch }}"
+
+          if git ls-remote --heads origin "${branch}" | grep -q .; then
+            echo "Branch ${branch} already exists on origin. Skipping."
+            exit 0
+          fi
+
+          git push origin "HEAD:refs/heads/${branch}"
