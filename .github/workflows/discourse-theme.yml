@@ -80,12 +80,12 @@ jobs:
         if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
         run: |
           if grep -q 'lint:js' package.json; then
-            ${{ steps.js-pkg-manager.outputs.manager }} lint:js
+            ${{ steps.js-pkg-manager.outputs.manager }} lint:js --max-warnings 0
           elif test -f eslint.config.mjs; then
             # modern flat config. No --ext needed
-            ${{ steps.js-pkg-manager.outputs.manager }} eslint --no-error-on-unmatched-pattern {test,javascripts}
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --no-error-on-unmatched-pattern --max-warnings 0 {test,javascripts}
           else
-            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs --no-error-on-unmatched-pattern {test,javascripts}
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs --no-error-on-unmatched-pattern --max-warnings 0 {test,javascripts}
           fi
 
       - name: Stylelint
