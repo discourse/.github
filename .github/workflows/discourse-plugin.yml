@@ -20,10 +20,6 @@ on:
       container:
         type: string
         required: false
-      DISCOURSE_DOWNLOAD_PRE_BUILT_ASSETS:
-        type: string
-        required: false
-        default: "1"
     secrets:
       ssh_private_key:
         description: "Optional SSH private key to be used when cloning additional plugin repos"
@@ -401,9 +397,9 @@ jobs:
         if: matrix.build_type == 'system' || matrix.build_type == 'frontend'
         env:
           EMBER_ENV: development
-          DISCOURSE_DOWNLOAD_PRE_BUILT_ASSETS: ${{ inputs.DISCOURSE_DOWNLOAD_PRE_BUILT_ASSETS }}
         run: |
           if [ -f script/assemble_ember_build.rb ]; then
+            export DISCOURSE_DOWNLOAD_PRE_BUILT_ASSETS=$(bin/rails runner 'puts(Discourse.has_needed_version?(Discourse::VERSION::STRING, "2026.3.0-latest") ? 1 : 0)')
             script/assemble_ember_build.rb
           else
             bin/ember-cli --build
