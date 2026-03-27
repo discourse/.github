@@ -399,6 +399,7 @@ jobs:
           EMBER_ENV: development
         run: |
           if [ -f script/assemble_ember_build.rb ]; then
+            export DISCOURSE_DOWNLOAD_PRE_BUILT_ASSETS=$(bin/rails runner 'puts(Discourse.has_needed_version?(Discourse::VERSION::STRING, "2026.3.0-latest") ? 1 : 0)')
             script/assemble_ember_build.rb
           else
             bin/ember-cli --build
