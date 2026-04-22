@@ -20,6 +20,16 @@ on:
       container:
         type: string
         required: false
+      skip_linting:
+        description: "Skip the linting job."
+        type: boolean
+        required: false
+        default: false
+      skip_annotations:
+        description: "Skip the annotation checks in the test matrix."
+        type: boolean
+        required: false
+        default: false
     secrets:
       ssh_private_key:
         description: "Optional SSH private key to be used when cloning additional plugin repos"
@@ -38,6 +48,7 @@ defaults:
 
 jobs:
   linting:
+    if: ${{ !inputs.skip_linting }}
     runs-on: ${{ inputs.runs_on }}
     container: ${{ inputs.container || 'discourse/discourse_test:slim' }}
 
@@ -167,6 +178,8 @@ jobs:
         id: check_tests
         shell: ruby {0}
         working-directory: tmp/plugin
+        env:
+          SKIP_ANNOTATIONS: ${{ inputs.skip_annotations }}
         run: |
           require 'json'
 
@@ -175,7 +188,7 @@ jobs:
           matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,gjs}").any?
           matrix << 'backend'
           matrix << 'system' if Dir.glob("spec/system/**/*.rb").any?
-          matrix << 'annotations' if Dir.glob("app/models/**/*.rb").reject { _1.match?("concerns") }.any?
+          matrix << 'annotations' if ENV["SKIP_ANNOTATIONS"] != "true" && Dir.glob("app/models/**/*.rb").reject { _1.match?("concerns") }.any?
 
           puts "Running jobs: #{matrix.inspect}"
 

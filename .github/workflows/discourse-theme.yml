@@ -17,6 +17,11 @@ on:
       container:
         type: string
         required: false
+      skip_linting:
+        description: "Skip the linting job."
+        type: boolean
+        required: false
+        default: false
     secrets:
       ssh_private_key:
         description: "Optional SSH private key to be used when cloning additional plugin repos"
@@ -35,6 +40,7 @@ defaults:
 
 jobs:
   linting:
+    if: ${{ !inputs.skip_linting }}
     runs-on: ${{ inputs.runs_on }}
     container: ${{ inputs.container || 'discourse/discourse_test:slim' }}
 
