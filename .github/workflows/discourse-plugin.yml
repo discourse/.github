@@ -131,7 +131,7 @@ jobs:
           fi
 
       - name: Ember template lint
-        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE }}
+        if: ${{ !cancelled() && steps.js-pkg-manager.outputs.manager != env.JS_PKG_MANAGER_NULL_VALUE && hashFiles('.template-lintrc.cjs') != '' }}
         run: |
           if grep -q 'lint:hbs' package.json; then
             ${{ steps.js-pkg-manager.outputs.manager }} lint:hbs
