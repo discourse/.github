@@ -398,6 +398,19 @@ jobs:
             exit 1
           fi
 
+      - name: Check SKIP_DB_AND_REDIS bootability
+        if: matrix.build_type == 'backend'
+        run: |
+          if ! (SKIP_DB_AND_REDIS=1 RAILS_DB="nonexistent" bin/rails runner "puts 'booted successfully'"); then
+            echo
+            echo "---------------------------------------------"
+            echo
+            echo "::error::SKIP_DB_AND_REDIS boot failed. Make sure the database is not being accessed during the Rails boot process."
+            echo "To reproduce locally, run \`SKIP_DB_AND_REDIS=1 RAILS_DB='nonexistent' bin/rails runner \"puts 'booted successfully'\"\`."
+            echo
+            exit 1
+          fi
+
       - name: Validate discourse-compatibility
         if: matrix.build_type == 'backend' && needs.check_for_tests.outputs.has_compatibility_file && !inputs.core_ref
         run: bin/rake "compatibility:validate[plugins/${{ env.PLUGIN_NAME }}/.discourse-compatibility]"
