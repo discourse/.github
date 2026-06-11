@@ -1,4 +1,4 @@
-name: Create d-compat branch
+name: Maybe create d-compat branch
 
 on:
   workflow_call:
@@ -18,14 +18,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 1
+          ref: ${{ github.event.repository.default_branch || github.ref_name }}
+          fetch-depth: 0
+          filter: tree:0
 
-      - name: Get latest Discourse tag
-        id: get_tag
+      - name: Create d-compat branch
         shell: ruby {0}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          refs = `git ls-remote --refs --tags https://github.com/discourse/discourse 'refs/tags/v20*'`
-          abort "Failed to fetch tags from discourse/discourse" unless $?.success?
+          require "open3"
+
+          def sh(*cmd)
+            stdout, status = Open3.capture2(*cmd)
+            abort "Command failed: #{cmd.join(" ")}" unless status.success?
+            stdout
+          end
+
+          # Find the latest Discourse release tag.
+          refs = sh("git", "ls-remote", "--refs", "--tags", "https://github.com/discourse/discourse", "refs/tags/v20*")
 
           version = refs
             .lines
@@ -34,19 +45,26 @@ jobs:
             .sort_by { Gem::Version.new(_1) }
             .last
 
+          abort "No matching Discourse tag found" if version.nil?
+
+          tag = "v#{version}.0"
           branch = "d-compat/#{version}"
+          puts "Latest Discourse tag: #{tag}"
           puts "New branch name: #{branch}"
 
-          File.write(ENV.fetch("GITHUB_OUTPUT"), "branch=#{branch}\n", mode: "a+")
-
-      - name: Create new branch
-        shell: bash
-        run: |
-          branch="${{ steps.get_tag.outputs.branch }}"
-
-          if git ls-remote --heads origin "${branch}" | grep -q .; then
-            echo "Branch ${branch} already exists on origin. Skipping."
+          if sh("git", "ls-remote", "--heads", "origin", branch).strip != ""
+            puts "Branch #{branch} already exists on origin. Skipping."
             exit 0
-          fi
+          end
 
-          git push origin "HEAD:refs/heads/${branch}"
+          # Timestamp of the commit the core release was cut from.
+          core_date = sh("gh", "api", "repos/discourse/discourse/commits/#{tag}", "--jq", ".commit.committer.date").strip
+          puts "Core release #{tag} was cut at #{core_date}"
+
+          # Walk back through this repo's main history to the first commit that
+          # predates the core release, and cut the branch from there.
+          base = sh("git", "rev-list", "-1", "--first-parent", "--before=#{core_date}", "HEAD").strip
+          abort "No commit on main predates #{core_date}." if base.empty?
+
+          puts "Cutting #{branch} from #{sh("git", "log", "-1", "--format=%H (%cI)", base).strip}"
+          sh("git", "push", "origin", "#{base}:refs/heads/#{branch}")
