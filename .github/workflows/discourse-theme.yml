@@ -228,11 +228,29 @@ jobs:
       - name: Set working directory owner
         run: chown root:root .
 
+      - name: "Determine core target"
+        id: core-target
+        shell: ruby {0}
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          CORE_REF: ${{ inputs.core_ref }}
+        run: |
+          core_ref =
+            if (version = ENV["BASE_REF"][%r{\Ad-compat/(\d{4}\.\d+)\z}, 1])
+              "release/#{version}"
+            else
+              ENV["CORE_REF"]
+            end
+
+          puts "Using core ref '#{core_ref}'"
+
+          File.write(ENV["GITHUB_OUTPUT"], "core_ref=#{core_ref}\n", mode: "a+")
+
       - uses: actions/checkout@v6
         with:
           repository: discourse/discourse
           fetch-depth: 1
-          ref: ${{ inputs.core_ref }}
+          ref: ${{ steps.core-target.outputs.core_ref }}
 
       - name: Install component
         uses: actions/checkout@v6
