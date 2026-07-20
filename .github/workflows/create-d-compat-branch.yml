@@ -64,7 +64,11 @@ jobs:
           # Walk back through this repo's main history to the first commit that
           # predates the core release, and cut the branch from there.
           base = sh("git", "rev-list", "-1", "--first-parent", "--before=#{core_date}", "HEAD").strip
-          abort "No commit on main predates #{core_date}." if base.empty?
+
+          if base.empty?
+            puts "No commit on main predates #{core_date}."
+            exit 0
+          end
 
           puts "Cutting #{branch} from #{sh("git", "log", "-1", "--format=%H (%cI)", base).strip}"
           sh("git", "push", "origin", "#{base}:refs/heads/#{branch}")
