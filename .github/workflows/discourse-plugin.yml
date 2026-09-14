@@ -493,10 +493,6 @@ jobs:
           path: ${{ env.MINIO_RUNNER_INSTALL_DIR }}
           key: ${{ runner.os }}-${{ steps.container-envs.outputs.ruby_version }}-${{ steps.container-envs.outputs.debian_release }}
 
-      - name: Ensure latest minio binary installed for Core System Tests
-        if: matrix.build_type == 'system'
-        run: bundle exec ruby script/install_minio_binaries.rb
-
       - name: Plugin System Tests
         if: matrix.build_type == 'system'
         env:
