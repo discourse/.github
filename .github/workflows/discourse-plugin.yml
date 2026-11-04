@@ -99,7 +99,7 @@ jobs:
             # modern flat config. No --ext needed
             ${{ steps.js-pkg-manager.outputs.manager }} eslint --no-error-on-unmatched-pattern --max-warnings 0 {test,assets,admin/assets}/javascripts
           else
-            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs --no-error-on-unmatched-pattern --max-warnings 0 {test,assets,admin/assets}/javascripts
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs,.ts,.gts --no-error-on-unmatched-pattern --max-warnings 0 {test,assets,admin/assets}/javascripts
           fi
 
       - name: Stylelint
@@ -119,14 +119,14 @@ jobs:
           if grep -q 'lint:prettier' package.json; then
             ${{ steps.js-pkg-manager.outputs.manager }} lint:prettier
           else
-            if [ -n "$(find assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
-              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "assets/**/*.{scss,js,gjs,hbs}"
+            if [ -n "$(find assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.ts' -or -name '*.gts' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "assets/**/*.{scss,js,gjs,ts,gts,hbs}"
             fi
-            if [ -n "$(find admin/assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.hbs' \) 2>/dev/null)" ]; then
-              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "admin/assets/**/*.{scss,js,gjs,hbs}"
+            if [ -n "$(find admin/assets -type f \( -name '*.scss' -or -name '*.js' -or -name '*.gjs' -or -name '*.ts' -or -name '*.gts' -or -name '*.hbs' \) 2>/dev/null)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "admin/assets/**/*.{scss,js,gjs,ts,gts,hbs}"
             fi
-            if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' \) 2> /dev/null | wc -l)" ]; then
-              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs}"
+            if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' -or -name '*.ts' -or -name '*.gts' \) 2> /dev/null | wc -l)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs,ts,gts}"
             fi
           fi
 
@@ -185,7 +185,7 @@ jobs:
 
           matrix = []
 
-          matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,gjs}").any?
+          matrix << 'frontend' if Dir.glob("test/javascripts/**/*.{js,gjs,ts,gts}").any?
           matrix << 'backend'
           matrix << 'system' if Dir.glob("spec/system/**/*.rb").any?
           matrix << 'annotations' if ENV["SKIP_ANNOTATIONS"] != "true" && Dir.glob("app/models/**/*.rb").reject { _1.match?("concerns") }.any?

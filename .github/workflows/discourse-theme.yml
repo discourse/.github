@@ -91,7 +91,7 @@ jobs:
             # modern flat config. No --ext needed
             ${{ steps.js-pkg-manager.outputs.manager }} eslint --no-error-on-unmatched-pattern --max-warnings 0 {test,javascripts}
           else
-            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs --no-error-on-unmatched-pattern --max-warnings 0 {test,javascripts}
+            ${{ steps.js-pkg-manager.outputs.manager }} eslint --ext .js,.gjs,.ts,.gts --no-error-on-unmatched-pattern --max-warnings 0 {test,javascripts}
           fi
 
       - name: Stylelint
@@ -111,12 +111,12 @@ jobs:
           if grep -q 'lint:prettier' package.json; then
             ${{ steps.js-pkg-manager.outputs.manager }} lint:prettier
           else
-            files=$(find javascripts desktop mobile common scss -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.hbs" \) 2> /dev/null) || true
+            files=$(find javascripts desktop mobile common scss -type f \( -name "*.scss" -or -name "*.js" -or -name "*.gjs" -or -name "*.ts" -or -name "*.gts" -or -name "*.hbs" \) 2> /dev/null) || true
             if [ -n "$files" ]; then
               ${{ steps.js-pkg-manager.outputs.manager }} prettier --check $files
             fi
-            if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' \) 2> /dev/null | wc -l)" ]; then
-              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs}"
+            if [ 0 -lt "$(find test -type f \( -name '*.js' -or -name '*.gjs' -or -name '*.ts' -or -name '*.gts' \) 2> /dev/null | wc -l)" ]; then
+              ${{ steps.js-pkg-manager.outputs.manager }} prettier --check "test/**/*.{js,gjs,ts,gts}"
             fi
           fi
 
@@ -185,7 +185,7 @@ jobs:
 
           matrix = []
 
-          matrix << 'frontend' if Dir.glob("test/**/*.{js,gjs}").any?
+          matrix << 'frontend' if Dir.glob("test/**/*.{js,gjs,ts,gts}").any?
           matrix << 'backend' if has_non_system_specs || has_compatibility_file || has_locale_files
           matrix << 'system' if has_system_specs
 
